@@ -27,7 +27,7 @@ OUTPUT_COLUMNS = [
     "red_flags",
     "reasoning",
 ]
-MAX_INLINE_SOURCES = 5
+MAX_INLINE_SOURCES = 12
 POLITE_HOST_GAP_SECONDS = 0.25
 
 

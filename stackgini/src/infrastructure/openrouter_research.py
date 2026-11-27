@@ -74,13 +74,16 @@ CALIBRATION PRINCIPLES (BALANCED PROCUREMENT JUDGMENT):
    - Verified regulatory fines/enforcement orders, undisclosed sanctions exposure, missing verifiable corporate
      entity/address, fabricated traction or misrepresented customer badges, or EOL software advising security bypass.
 
-Leave `red_signals` empty for Green/Yellow verdicts. Return strict JSON:
+Leave `red_signals` empty for Green/Yellow verdicts. Every item in `green_signals`, `yellow_signals`, and
+`red_signals`, plus each factual claim in `reasoning`, MUST end with its exact verifying `https://...` URL
+from the search dossiers above (or the target URL for DOM observations).
+Return strict JSON:
 {{
   "suggested_overall": "Green" | "Yellow" | "Red",
-  "green_signals": [string],
-  "yellow_signals": [string],
-  "red_signals": [string],
-  "reasoning": "2-4 balanced sentences citing concrete verified facts and URLs.",
+  "green_signals": ["Concise verified positive signal (https://...)"],
+  "yellow_signals": ["Concise verified caution signal (https://...)"],
+  "red_signals": ["Concise verified risk signal (https://...)"],
+  "reasoning": "2-4 balanced sentences with an inline source URL behind each reason.",
   "citations": [{{"title": string, "url": "https://..."}}]
 }}"""
 

@@ -1,0 +1,254 @@
+[
+  {
+    "id": "u1",
+    "url": "https://linear.app",
+    "overall": "Green",
+    "source_urls": [
+      "https://dns.google/resolve?name=linear.app",
+      "https://api.github.com/search/repositories?q=%22linear.app%22%20subprocessors&per_page=3",
+      "https://linear.app/",
+      "https://linear.app/security",
+      "https://linear.app/legal",
+      "https://linear.app/privacy",
+      "https://linear.app/terms",
+      "https://linear.app/legal/aup",
+      "https://news.google.com/rss/articles/CBMiU0FVX3lxTFBmU3dTeUwwX1RNYUE3dUVnZ1lKM3JBbUpKOWdxdmpfTXF0N0RYaXhyTVFRTWV3ZnFoNDlGcDF0SFBnUkVNUENlZmZOTjRBaFlmOXBr?oc=5",
+      "https://github.com/kenjihiranabe/The-Art-of-Linear-Algebra"
+    ],
+    "technical_probes": {
+      "trust_score": 80,
+      "verdict": "verified",
+      "abstained": [
+        "certs",
+        "wayback"
+      ],
+      "findings": [
+        {
+          "rule_id": "dns_full_auth",
+          "claim": "Mail and sender authentication DNS records",
+          "observed_fact": "mx_count=4,dmarc=present",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=linear.app"
+        },
+        {
+          "rule_id": "dns_saas_stack",
+          "claim": "DNS third-party SaaS verification footprint",
+          "observed_fact": "saas_tokens=10 (anthropic,apple,docusign)",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=linear.app"
+        },
+        {
+          "rule_id": "subprocessor_unlisted",
+          "claim": "Enterprise GDPR subprocessor reverse lookup",
+          "observed_fact": "enterprise_refs=0",
+          "impact": 0,
+          "source_url": "https://api.github.com/search/repositories?q=%22linear.app%22%20subprocessors&per_page=3"
+        }
+      ],
+      "dom_summary": "final_url=https://linear.app/, claimed_year=None, dead_social=0, legal_docs=5, imprint_hits=0"
+    }
+  },
+  {
+    "id": "u2",
+    "url": "https://www.curl.se/",
+    "overall": "Green",
+    "source_urls": [
+      "https://api.github.com/search/repositories?q=%22curl.se%22%20subprocessors&per_page=3",
+      "https://curl.se/",
+      "https://curl.se/docs/security.html",
+      "https://news.google.com/rss/articles/CBMiswFBVV95cUxOeHFKX0RNZXVIU1lmM0hZOFBxX21ZZHJtajltMEc5bTRya0pKNURDdFgyMllfSkRYUUxZcTZEMXVIUjBnblhBMGRLZk1mYUdTdHVjU2dBN04zb0lwSzZ4WVpHSEdlZk02eVdEWDRkaE0xYjBROHJycXBEaG5qWEt3UEJNYTNBeTNOMmdudE42UVVFbjFPY1lsS3ZoblJmTmFTd3NVMDRtQ19FQlo1amV4NkFxaw?oc=5",
+      "https://en.wikipedia.org/wiki/CURL",
+      "https://github.com/curl/curl"
+    ],
+    "technical_probes": {
+      "trust_score": 70,
+      "verdict": "verified",
+      "abstained": [
+        "certs",
+        "wayback"
+      ],
+      "findings": [
+        {
+          "rule_id": "subprocessor_unlisted",
+          "claim": "Enterprise GDPR subprocessor reverse lookup",
+          "observed_fact": "enterprise_refs=0",
+          "impact": 0,
+          "source_url": "https://api.github.com/search/repositories?q=%22curl.se%22%20subprocessors&per_page=3"
+        }
+      ],
+      "dom_summary": "final_url=https://curl.se/, claimed_year=None, dead_social=0, legal_docs=1, imprint_hits=0"
+    }
+  },
+  {
+    "id": "u3",
+    "url": "https://www.personio.de/",
+    "overall": "Green",
+    "source_urls": [
+      "https://dns.google/resolve?name=personio.de",
+      "https://api.github.com/search/repositories?q=%22personio.de%22%20subprocessors&per_page=3",
+      "https://www.personio.de/",
+      "https://vercel.link/security-checkpoint"
+    ],
+    "technical_probes": {
+      "trust_score": 80,
+      "verdict": "verified",
+      "abstained": [
+        "rdap",
+        "certs",
+        "wayback"
+      ],
+      "findings": [
+        {
+          "rule_id": "dns_full_auth",
+          "claim": "Mail and sender authentication DNS records",
+          "observed_fact": "mx_count=5,dmarc=present",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=personio.de"
+        },
+        {
+          "rule_id": "dns_saas_stack",
+          "claim": "DNS third-party SaaS verification footprint",
+          "observed_fact": "saas_tokens=13 (1password,airtable,anthropic)",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=personio.de"
+        },
+        {
+          "rule_id": "subprocessor_unlisted",
+          "claim": "Enterprise GDPR subprocessor reverse lookup",
+          "observed_fact": "enterprise_refs=0",
+          "impact": 0,
+          "source_url": "https://api.github.com/search/repositories?q=%22personio.de%22%20subprocessors&per_page=3"
+        }
+      ],
+      "dom_summary": "final_url=https://www.personio.de/, claimed_year=None, dead_social=0, legal_docs=1, imprint_hits=0"
+    }
+  },
+  {
+    "id": "u4",
+    "url": "https://www.lastpass.com/",
+    "overall": "Green",
+    "source_urls": [
+      "https://dns.google/resolve?name=lastpass.com",
+      "https://www.lastpass.com/",
+      "https://www.lastpass.com/resources/best-practices/ai-saas-security-guides",
+      "https://www.lastpass.com/trust-center",
+      "https://www.lastpass.com/security",
+      "https://www.lastpass.com/features/security-dashboard",
+      "https://www.lastpass.com/roles/legal",
+      "https://www.lastpass.com/resources/reports/state-of-ai-and-saas-security-2026",
+      "https://www.lastpass.com/trial/msp",
+      "https://www.lastpass.com/partner/partner-locator",
+      "https://en.wikipedia.org/wiki/LastPass"
+    ],
+    "technical_probes": {
+      "trust_score": 80,
+      "verdict": "verified",
+      "abstained": [
+        "certs",
+        "subprocessor",
+        "wayback"
+      ],
+      "findings": [
+        {
+          "rule_id": "dns_full_auth",
+          "claim": "Mail and sender authentication DNS records",
+          "observed_fact": "mx_count=1,dmarc=present",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=lastpass.com"
+        },
+        {
+          "rule_id": "dns_saas_stack",
+          "claim": "DNS third-party SaaS verification footprint",
+          "observed_fact": "saas_tokens=8 (anthropic,apple,atlassian)",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=lastpass.com"
+        }
+      ],
+      "dom_summary": "final_url=https://www.lastpass.com/, claimed_year=None, dead_social=0, legal_docs=8, imprint_hits=0"
+    }
+  },
+  {
+    "id": "u5",
+    "url": "https://www.broadcom.com/products/software/automation/automic-automation",
+    "overall": "Green",
+    "source_urls": [
+      "https://dns.google/resolve?name=broadcom.com",
+      "https://www.broadcom.com/products/software/automation/automic-automation"
+    ],
+    "technical_probes": {
+      "trust_score": 80,
+      "verdict": "verified",
+      "abstained": [
+        "certs",
+        "subprocessor",
+        "wayback"
+      ],
+      "findings": [
+        {
+          "rule_id": "dns_full_auth",
+          "claim": "Mail and sender authentication DNS records",
+          "observed_fact": "mx_count=7,dmarc=present",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=broadcom.com"
+        },
+        {
+          "rule_id": "dns_saas_stack",
+          "claim": "DNS third-party SaaS verification footprint",
+          "observed_fact": "saas_tokens=8 (1password,airtable,apple)",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=broadcom.com"
+        }
+      ],
+      "dom_summary": "final_url=https://www.broadcom.com/products/software/automation/automic-automation, claimed_year=None, dead_social=0, legal_docs=0, imprint_hits=0"
+    }
+  },
+  {
+    "id": "u6",
+    "url": "https://www.blender.org/",
+    "overall": "Green",
+    "source_urls": [
+      "https://crt.sh/?q=blender.org&output=json",
+      "https://dns.google/resolve?name=blender.org",
+      "https://api.github.com/search/repositories?q=%22blender.org%22%20subprocessors&per_page=3",
+      "https://github.com/ahujasid/mcp-for-blender"
+    ],
+    "technical_probes": {
+      "trust_score": 85,
+      "verdict": "verified",
+      "abstained": [
+        "wayback"
+      ],
+      "findings": [
+        {
+          "rule_id": "cert_established",
+          "claim": "Certificate Transparency footprint",
+          "observed_fact": "cert_count=4052",
+          "impact": 5,
+          "source_url": "https://crt.sh/?q=blender.org&output=json"
+        },
+        {
+          "rule_id": "cert_subdomains",
+          "claim": "Certificate Transparency operational infrastructure",
+          "observed_fact": "operational_subdomains=3,renewal_span_years=14",
+          "impact": 5,
+          "source_url": "https://crt.sh/?q=blender.org&output=json"
+        },
+        {
+          "rule_id": "dns_full_auth",
+          "claim": "Mail and sender authentication DNS records",
+          "observed_fact": "mx_count=5,dmarc=present",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=blender.org"
+        },
+        {
+          "rule_id": "subprocessor_unlisted",
+          "claim": "Enterprise GDPR subprocessor reverse lookup",
+          "observed_fact": "enterprise_refs=0",
+          "impact": 0,
+          "source_url": "https://api.github.com/search/repositories?q=%22blender.org%22%20subprocessors&per_page=3"
+        }
+      ],
+      "dom_summary": "DOM unavailable: waf_blocked"
+    }
+  }
+]
