@@ -5,7 +5,9 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from src.api.app import create_app
+from src.application.assess_vendor import AssessVendorUseCase
 from src.application.verify_vendor import VerifyVendorUseCase
+from src.domain.assessment import DomForensics, StackginiVerdict, VendorInput, WebCitation, WebIntelligence
 from src.domain.models import (
     CertFootprint,
     DnsProfile,
@@ -16,6 +18,7 @@ from src.domain.models import (
 )
 from src.domain.rules import default_vendor_rules
 from src.ports.probes import VendorProbeGateway
+from src.ports.research import ResearchGateway
 
 
 class StubRdap:
@@ -74,3 +77,44 @@ def test_api_health_openapi_and_verify_endpoint() -> None:
 
     rejected = client.post("/api/v1/verify", json={"domain": "http://127.0.0.1:8000"})
     assert rejected.status_code == 422
+
+
+class StubPagePort:
+    async def inspect_page(self, url: str) -> ProbeOutcome[DomForensics]:
+        return ProbeOutcome.observed(url, DomForensics(url, "Vendor", "Enterprise SaaS", 0, (), 800))
+
+
+class StubResearchPort:
+    async def research_vendor(self, item: VendorInput, dom_excerpt: str) -> ProbeOutcome[WebIntelligence]:
+        return ProbeOutcome.observed(
+            "https://www.google.com/search",
+            WebIntelligence(
+                suggested_overall=StackginiVerdict.GREEN,
+                summary="Established SaaS vendor.",
+                citations=(WebCitation("Vendor", "https://vendor.de/about"),),
+                green_signals=("Enterprise adoption",),
+                yellow_signals=(),
+                red_signals=(),
+            ),
+        )
+
+
+def test_api_assess_endpoint_returns_stackgini_verdict() -> None:
+    probes = VendorProbeGateway(
+        rdap=StubRdap(),
+        certs=StubCerts(),
+        dns=StubDns(),
+        subprocessor=StubSubprocessor(),
+        wayback=StubWayback(),
+    )
+    verify_uc = VerifyVendorUseCase(gateway=probes, rules=default_vendor_rules())
+    assess_uc = AssessVendorUseCase(verify_uc, ResearchGateway(StubPagePort(), StubResearchPort()))
+    client = TestClient(create_app(use_case=verify_uc, assess_use_case=assess_uc))
+    resp = client.post(
+        "/api/v1/assess",
+        json={"row_id": "1", "url": "https://vendor.de", "product": "VendorSuite", "vendor": "Vendor GmbH"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["overall"] == "Green"
+    assert "https://vendor.de/about" in data["source_urls"]
