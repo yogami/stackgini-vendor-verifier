@@ -13,7 +13,17 @@ from src.infrastructure.ssrf import normalize_public_domain
 
 PAGE_TIMEOUT_MS = 12000
 MAX_VISIBLE_TEXT_CHARS = 8000
-USER_AGENT = "StackginiVendorVerifier/0.2 (+https://stackgini.de)"
+WAF_SHORT_LEN = 500
+WAF_MARKERS = (
+    "access denied",
+    "you don't have permission to access",
+    "attention required! | cloudflare",
+    "just a moment...",
+)
+USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+)
 
 _DOM_EXTRACTION_JS = """() => {
     const title = document.title || "";
@@ -86,6 +96,21 @@ async def _run_playwright_inspection(url: str) -> DomForensics:
             await browser.close()
 
 
+def is_waf_blocked_dom(dom: DomForensics) -> bool:
+    """Return True when page text looks like a short WAF/bot-protection challenge."""
+    text = dom.visible_text.strip().lower()
+    if len(text) > WAF_SHORT_LEN:
+        return False
+    combined = f"{dom.title.lower()} {text}"
+    return any(marker in combined for marker in WAF_MARKERS)
+
+
+def _dom_outcome(forensics: DomForensics) -> ProbeOutcome[DomForensics]:
+    if is_waf_blocked_dom(forensics):
+        return ProbeOutcome.unavailable(forensics.final_url, "waf_blocked")
+    return ProbeOutcome.observed(forensics.final_url, forensics)
+
+
 class PlaywrightDomAdapter:
     """Async headless Chromium adapter implementing RenderedPagePort."""
 
@@ -102,4 +127,4 @@ class PlaywrightDomAdapter:
             forensics = await _run_playwright_inspection(url)
         except (PlaywrightError, TimeoutError, OSError) as exc:
             return ProbeOutcome.unavailable(url, type(exc).__name__)
-        return ProbeOutcome.observed(forensics.final_url, forensics)
+        return _dom_outcome(forensics)

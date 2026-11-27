@@ -1,4 +1,4 @@
-"""OpenRouter web-grounded research adapter for nuanced procurement due diligence."""
+"""OpenRouter two-stage web-grounded research adapter for Stackgini due diligence."""
 
 from __future__ import annotations
 
@@ -14,43 +14,52 @@ from src.domain.assessment import StackginiVerdict, VendorInput, WebCitation, We
 from src.domain.models import ProbeOutcome
 
 OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions"
-DEFAULT_OPENROUTER_MODEL = "anthropic/claude-sonnet-4.5"
+DEFAULT_SEARCH_MODEL = "openai/gpt-4o-mini"
+DEFAULT_SYNTHESIS_MODEL = "anthropic/claude-sonnet-4.5"
 TIMEOUT_SECONDS = 45.0
-MAX_WEB_RESULTS = 8
+MAX_WEB_RESULTS = 5
+MAX_DOSSIER_TOKENS = 900
 HTTP_OK = 200
 
-_STACKGINI_PROMPT = """You are a senior software procurement due-diligence analyst for Stackgini.
-Use web search thoroughly to investigate off-site facts NOT on the vendor's marketing page.
-
-Target:
+_SEARCH_PROMPT = """Gather a concise factual due-diligence dossier using web search for:
 - URL: {url}
 - Product: {product}
 - Vendor: {vendor}
 - Rendered DOM Excerpt: {dom_excerpt}
 
-Investigate these 5 dimensions via web search:
-1. Regulatory & legal accountability: FTC orders, GDPR/DPA fines or unlawful rulings, class actions,
-   sanctions/Russia exit trackers (e.g. Yale CELI), or missing legal entity/Impressum.
-2. Security posture & disclosure transparency: Recent breaches or CVEs. Distinguish transparent
-   disclosure with external forensics (Green with yellow_signals) vs silent/status-page-only
-   incidents (Yellow).
-3. Ownership, M&A & naming/licensing traps: Private equity carve-outs, frequent owner flips,
-   post-acquisition layoffs/roadmap freezes, or multi-product naming/SKU/token confusion.
-   Distinguish solid market leaders with M&A/CEO context (Green + yellow_signals) from confusing
-   licensing mazes or PE asset-squeezing (Yellow).
-4. Legacy-site calibration: NEVER downgrade ugly, 1990s/2000s, or minimal sites when recent
-   releases, foundation backing, community forks, or 3rd-party training prove active adoption (Green).
-   Conversely, check if a clean site is a single-hobbyist side project (Yellow), EOL with AV-bypass
-   instructions (Red), or displays fake user counts / partner badges styled as customers (Red).
-5. Always cite exact external URLs found via search in `citations`.
+Cover these 5 areas with dates, numbers, and exact URLs:
+1. Regulatory/legal actions: FTC orders, GDPR/DPA fines, lawsuits, sanctions/Russia trackers, or legal entity.
+2. Security incidents: Breaches/CVEs, and transparent main-site post-mortem vs silent status-page-only notice.
+3. Ownership & naming: M&A history, PE carve-outs, CEO changes, layoffs, or confusing renames/SKUs/tokens.
+4. Adoption & maintenance: Customer vs employee counts, release dates, forks/CRAN/GitHub, 3rd-party training.
+5. Obvious red flags: EOL/discontinuation, partner logos disguised as customers, or unverifiable claims."""
 
-Return strict JSON with keys:
-- "suggested_overall": "Green" | "Yellow" | "Red"
-- "green_signals": [string]
-- "yellow_signals": [string]
-- "red_signals": [string]
-- "reasoning": string (concise 2-4 sentence procurement summary citing verified sources)
-- "citations": [{{"title": string, "url": "https://..."}}]"""
+_SYNTHESIS_PROMPT = """You are Stackgini's senior procurement verifier. Grade the vendor strictly on verified facts.
+
+Target: {product} by {vendor} ({url})
+Rendered DOM Excerpt: {dom_excerpt}
+Web Research Dossier:
+{dossier}
+
+CALIBRATION RULES:
+- NEVER downgrade ugly, 1990s/2000s, or minimal sites if releases, foundation backing, or adoption are active (Green).
+- NEVER penalize a vendor if automated scraping/Playwright hit WAF Access Denied, 403, or robots.txt blocks.
+- Rate GREEN if solid and widely adopted, even with M&A/PE/CEO context or a transparently remediated past incident
+  with external forensics (list those caveats in yellow_signals).
+- Rate YELLOW for confusing naming/licensing traps, PE roadmap squeezes/layoffs, hobbyist bus factor,
+  or a recent customer-impacting security breach absent from the main site (only on status page or press).
+- Rate RED for FTC/DPA fines, undisclosed Russia/sanctions exposure, fake metrics/partner logos,
+  missing legal entity, or AV-bypass EOL.
+
+Return strict JSON:
+{{
+  "suggested_overall": "Green" | "Yellow" | "Red",
+  "green_signals": [string],
+  "yellow_signals": [string],
+  "red_signals": [string],
+  "reasoning": "2-4 balanced sentences citing the key facts and sources.",
+  "citations": [{{"title": string, "url": "https://..."}}]
+}}"""
 
 
 class _CitationItem(BaseModel):
@@ -116,9 +125,12 @@ def _valid_citation(title: str, url: str) -> WebCitation | None:
 
 
 def _parse_one_annotation(ann: object) -> WebCitation | None:
-    if not isinstance(ann, dict) or ann.get("type") != "url_citation":
+    entry = _as_dict(ann)
+    if entry.get("type") != "url_citation":
         return None
-    return _valid_citation(str(ann.get("title", "")), str(ann.get("url", "")))
+    nested = entry.get("url_citation")
+    source = nested if isinstance(nested, dict) else entry
+    return _valid_citation(str(source.get("title", "")), str(source.get("url", "")))
 
 
 def _annotation_citations(message: dict[str, object]) -> list[WebCitation]:
@@ -129,9 +141,9 @@ def _annotation_citations(message: dict[str, object]) -> list[WebCitation]:
     return [c for c in parsed if c is not None]
 
 
-def _merge_citations(parsed: _OpenRouterSchema, message: dict[str, object]) -> tuple[WebCitation, ...]:
+def _merge_citations(parsed: _OpenRouterSchema, extra: list[WebCitation]) -> tuple[WebCitation, ...]:
     body_cites = [c for c in (_valid_citation(i.title, i.url) for i in parsed.citations) if c is not None]
-    combined = [*body_cites, *_annotation_citations(message)]
+    combined = [*body_cites, *extra]
     return tuple({c.url: c for c in combined}.values())
 
 
@@ -145,28 +157,24 @@ def _index0_dict(items: object) -> dict[str, object]:
     return _as_dict(items[0]) if items else {}
 
 
-def _first_choice(payload: object) -> dict[str, object]:
-    choices = payload.get("choices") if isinstance(payload, dict) else None
-    return _index0_dict(choices)
-
-
 def _extract_message(payload: object) -> dict[str, object]:
-    msg = _first_choice(payload).get("message")
+    choices = payload.get("choices") if isinstance(payload, dict) else None
+    msg = _index0_dict(choices).get("message")
     return msg if isinstance(msg, dict) else {}
 
 
-def parse_openrouter_response(payload: object) -> WebIntelligence:
+def parse_openrouter_response(payload: object, extra_citations: list[WebCitation] | None = None) -> WebIntelligence:
     """Validate OpenRouter chat completion payload into immutable WebIntelligence."""
     message = _extract_message(payload)
     content = _strip_json_fences(str(message.get("content", "")))
     if not content:
         raise ValueError("Empty OpenRouter completion content")
     parsed = _OpenRouterSchema.model_validate_json(content)
-    citations = _merge_citations(parsed, message)
+    all_extra = [*_annotation_citations(message), *(extra_citations or [])]
     return WebIntelligence(
         suggested_overall=parsed.suggested_overall,
         summary=parsed.reasoning.strip(),
-        citations=citations,
+        citations=_merge_citations(parsed, all_extra),
         green_signals=tuple(parsed.green_signals),
         yellow_signals=tuple(parsed.yellow_signals),
         red_signals=tuple(parsed.red_signals),
@@ -194,62 +202,95 @@ async def _close_if_owned(client: httpx.AsyncClient, external: httpx.AsyncClient
 
 
 class OpenRouterWebResearchAdapter:
-    """WebResearchPort powered by OpenRouter frontier models + live web search plugin."""
+    """Two-stage OpenRouter WebResearchPort: cheap web search + frontier calibrated synthesis."""
 
     def __init__(
         self,
         api_key: str | None = None,
-        model: str = DEFAULT_OPENROUTER_MODEL,
+        search_model: str = DEFAULT_SEARCH_MODEL,
+        synthesis_model: str = DEFAULT_SYNTHESIS_MODEL,
         client: httpx.AsyncClient | None = None,
     ) -> None:
         self._api_key = _resolve_openrouter_key(api_key)
-        self._model = model
+        self._search_model = search_model
+        self._synthesis_model = synthesis_model
         self._client = client
 
     async def research_vendor(self, item: VendorInput, dom_excerpt: str) -> ProbeOutcome[WebIntelligence]:
-        """Run OpenRouter web-grounded research and return cited WebIntelligence."""
+        """Run Stage 1 web retrieval and Stage 2 calibrated verdict synthesis."""
         if not self._api_key:
             return ProbeOutcome.unavailable(OPENROUTER_CHAT_URL, "missing_api_key")
-        prompt = _STACKGINI_PROMPT.format(
-            url=item.url,
-            product=item.product,
-            vendor=item.vendor,
-            dom_excerpt=dom_excerpt,
-        )
-        return await self._post_chat(prompt)
+        return await self._execute_with_client(item, dom_excerpt)
 
-    async def _post_chat(self, prompt: str) -> ProbeOutcome[WebIntelligence]:
+    async def _execute_with_client(self, item: VendorInput, dom_excerpt: str) -> ProbeOutcome[WebIntelligence]:
         client = self._client or _default_ipv4_async_client()
         try:
-            resp = await client.post(
-                OPENROUTER_CHAT_URL,
-                headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
-                json=self._request_body(prompt),
-                timeout=TIMEOUT_SECONDS,
-            )
-            return self._map_response(resp)
+            return await self._run_two_stage(client, item, dom_excerpt)
         except (httpx.HTTPError, ValueError) as exc:
             return ProbeOutcome.unavailable(OPENROUTER_CHAT_URL, type(exc).__name__)
         finally:
             await _close_if_owned(client, self._client)
 
-    def _request_body(self, prompt: str) -> dict[str, object]:
-        return {
-            "model": self._model,
+    async def _run_two_stage(
+        self,
+        client: httpx.AsyncClient,
+        item: VendorInput,
+        dom_excerpt: str,
+    ) -> ProbeOutcome[WebIntelligence]:
+        dossier, search_cites, err = await self._stage1_search(client, item, dom_excerpt)
+        if err:
+            return ProbeOutcome.unavailable(OPENROUTER_CHAT_URL, err)
+        return await self._stage2_synthesize(client, item, dom_excerpt, (dossier, search_cites))
+
+    async def _stage1_search(
+        self,
+        client: httpx.AsyncClient,
+        item: VendorInput,
+        dom_excerpt: str,
+    ) -> tuple[str, list[WebCitation], str]:
+        prompt = _SEARCH_PROMPT.format(url=item.url, product=item.product, vendor=item.vendor, dom_excerpt=dom_excerpt)
+        body = {
+            "model": self._search_model,
             "plugins": [{"id": "web", "max_results": MAX_WEB_RESULTS}],
-            "response_format": {"type": "json_object"},
+            "max_tokens": MAX_DOSSIER_TOKENS,
             "messages": [{"role": "user", "content": prompt}],
         }
+        resp = await self._post_json(client, body)
+        if resp.status_code != HTTP_OK:
+            return "", [], f"http_{resp.status_code}"
+        msg = _extract_message(resp.json())
+        return str(msg.get("content", "")), _annotation_citations(msg), ""
 
-    def _map_response(self, resp: httpx.Response) -> ProbeOutcome[WebIntelligence]:
+    async def _stage2_synthesize(
+        self,
+        client: httpx.AsyncClient,
+        item: VendorInput,
+        dom_excerpt: str,
+        stage1: tuple[str, list[WebCitation]],
+    ) -> ProbeOutcome[WebIntelligence]:
+        prompt = _SYNTHESIS_PROMPT.format(
+            url=item.url,
+            product=item.product,
+            vendor=item.vendor,
+            dom_excerpt=dom_excerpt,
+            dossier=stage1[0],
+        )
+        body = {
+            "model": self._synthesis_model,
+            "response_format": {"type": "json_object"},
+            "max_tokens": MAX_DOSSIER_TOKENS,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        resp = await self._post_json(client, body)
         if resp.status_code != HTTP_OK:
             return ProbeOutcome.unavailable(OPENROUTER_CHAT_URL, f"http_{resp.status_code}")
-        return _decode_openrouter_json(resp)
+        intel = parse_openrouter_response(resp.json(), extra_citations=stage1[1])
+        return ProbeOutcome.observed(OPENROUTER_CHAT_URL, intel)
 
-
-def _decode_openrouter_json(resp: httpx.Response) -> ProbeOutcome[WebIntelligence]:
-    try:
-        intel = parse_openrouter_response(resp.json())
-    except ValueError as exc:
-        return ProbeOutcome.unavailable(OPENROUTER_CHAT_URL, type(exc).__name__)
-    return ProbeOutcome.observed(OPENROUTER_CHAT_URL, intel)
+    async def _post_json(self, client: httpx.AsyncClient, body: dict[str, object]) -> httpx.Response:
+        return await client.post(
+            OPENROUTER_CHAT_URL,
+            headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
+            json=body,
+            timeout=TIMEOUT_SECONDS,
+        )

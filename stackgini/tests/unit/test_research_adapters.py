@@ -17,7 +17,7 @@ from src.infrastructure.gemini_research import (
     extract_citations_from_steps,
     parse_gemini_assessment_json,
 )
-from src.infrastructure.playwright_dom import PlaywrightDomAdapter, build_dom_forensics
+from src.infrastructure.playwright_dom import PlaywrightDomAdapter, build_dom_forensics, is_waf_blocked_dom
 
 
 @dataclass(frozen=True)
@@ -51,6 +51,8 @@ def test_build_dom_forensics_extracts_fields() -> None:
     assert dom.dead_social_links == 4
     assert dom.legal_doc_urls == ("https://pbm.com/privacy",)
     assert dom.raw_text_len == 1500
+    assert is_waf_blocked_dom(DomForensics("https://x.com", "Access Denied", "Access Denied", 0, (), 50)) is True
+    assert is_waf_blocked_dom(dom) is False
 
 
 async def test_playwright_dom_adapter_rejects_ssrf_before_launch() -> None:
