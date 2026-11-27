@@ -39,8 +39,19 @@ def read_vendor_csv(csv_path: Path) -> list[VendorInput]:
         ]
 
 
+MAX_INLINE_SOURCES = 5
+
+
 def _format_flags(flags: tuple[str, ...]) -> str:
     return "; ".join(flags) if flags else "None identified."
+
+
+def _format_reasoning(assessment: StackginiAssessment) -> str:
+    base = assessment.reasoning.strip()
+    if not assessment.source_urls:
+        return base
+    top_urls = ", ".join(assessment.source_urls[:MAX_INLINE_SOURCES])
+    return f"{base} [Sources: {top_urls}]"
 
 
 def _assessment_to_row(assessment: StackginiAssessment) -> dict[str, str]:
@@ -53,7 +64,7 @@ def _assessment_to_row(assessment: StackginiAssessment) -> dict[str, str]:
         "green_flags": _format_flags(assessment.green_flags),
         "yellow_flags": _format_flags(assessment.yellow_flags),
         "red_flags": _format_flags(assessment.red_flags),
-        "reasoning": assessment.reasoning,
+        "reasoning": _format_reasoning(assessment),
     }
 
 

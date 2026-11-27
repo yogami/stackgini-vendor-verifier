@@ -129,6 +129,7 @@ def test_csv_batch_read_and_write_roundtrip(tmp_path: Path) -> None:
         rows = list(csv.DictReader(handle))
     assert rows[0]["overall"] == "Green"
     assert rows[0]["red_flags"] == "None identified."
+    assert "[Sources: https://www.postfix.org/]" in rows[0]["reasoning"]
     sources_json = tmp_path / "out_sources.json"
     assert json.loads(sources_json.read_text(encoding="utf-8"))[0]["id"] == "1"
     assert isinstance(ProbeOutcome.not_found("https://example.com").status, ProbeStatus)

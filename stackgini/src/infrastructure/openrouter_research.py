@@ -67,23 +67,24 @@ CALIBRATION RULES (FOLLOW CAREFULLY - DO NOT BE OVERLY STRICT ON LEGITIMATE VEND
      (note bus-factor/license in yellow_signals; only Yellow if recent supply-chain hijack or tiny weekend hobbyist).
    - Valid YC-backed or early startups with real self-serve pricing and transparent legal/terms are GREEN.
    - Solid enterprise leaders with 1-2 clean acquisitions/carve-outs (e.g. parent bought + PE carve-out),
-     parent-company historical issues unrelated to this product, or past (>90 days) CVEs/breaches that were
+     parent-company financial/legal issues unrelated to this product, or past (>90 days) CVEs/breaches that were
      transparently disclosed with external forensics/patches stay GREEN (put notes in yellow_signals).
 2. YELLOW (Moderate / Portfolio / Governance Risk):
    - Chronic serial M&A flipping (>= 4 distinct owners with repeated product renames), PE roll-up known for
      post-deal layoffs & stalled roadmaps, or acquired product hidden/unlinked in parent navigation.
    - Legacy/superseded product URL kept for SEO while vendor sells successor products under new names,
      or severe multi-product naming/SKU/licensing/token confusion.
-   - Very recent (within ~60 days) supply-chain/customer breach absent from main site (only on status page/press).
+   - Supply-chain / update-mechanism hijack on a single-maintainer open-source tool, or recent (~60 days)
+     customer-impacting breach absent from main site (only on status page/press).
    - Tiny unestablished single-hobbyist tool (day-job developer, minimal traction) or enterprise-pitched
      product missing ISO 27001/SOC 2 alongside unfinished site / dead '#' social links.
 3. RED (Disqualifying Trust, Legal, or Substance Risk):
    - Official regulator fines/orders (FTC, GDPR DPA, ICO) or active unlawful biometric/privacy enforcement
      (do NOT put unverified old bugs without regulator fines or directory stubs like registercheck.de in red_signals).
    - Undisclosed geopolitical/sanctions risk from credible research (e.g. Yale CELI Russia list).
-   - Missing identifiable legal entity/address/country anywhere on site/store, privacy policy downloading a .docx,
-     fake/contradictory user counters, partner/certification badges styled as customer logos ([IMG_ALTS]),
-     or explicit product EOL/discontinuation combined with antivirus-bypass instructions.
+   - Missing identifiable legal entity/company registration/address anywhere on site/store (MUST be RED, not Yellow),
+     privacy policy downloading a .docx, fake/contradictory user counters, partner/certification badges styled
+     as customer logos ([IMG_ALTS]), or explicit product EOL/discontinuation combined with antivirus-bypass advice.
 
 Only put verified disqualifying facts in `red_signals` (leave `red_signals` empty for Green/Yellow).
 Return strict JSON:
