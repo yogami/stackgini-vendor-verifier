@@ -10,7 +10,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from src.domain.assessment import StackginiVerdict, VendorInput
+from src.domain.assessment import StackginiVerdict, VendorInput, WebCitation
 from src.domain.models import ProbeStatus
 from src.infrastructure.openrouter_research import (
     OpenRouterWebResearchAdapter,
@@ -102,7 +102,7 @@ def test_parse_openrouter_response_parses_fenced_json_and_nested_citations() -> 
             }
         ]
     }
-    intel = parse_openrouter_response(body)
+    intel = parse_openrouter_response(body, allowed_host="optimizely.com")
     assert intel.suggested_overall == StackginiVerdict.YELLOW
     assert len(intel.citations) == 2
     assert intel.citations[1].url == "https://bleepingcomputer.com/x"
@@ -124,3 +124,62 @@ async def test_openrouter_adapter_two_stage_200_and_429() -> None:
         )
     assert err_res.status == ProbeStatus.UNAVAILABLE
     assert err_res.reason == "http_429"
+
+
+def test_parse_openrouter_response_filters_ungrounded_stage2_citations() -> None:
+    payload = {
+        "choices": [
+            {
+                "message": {
+                    "content": json.dumps(
+                        {
+                            "suggested_overall": "Green",
+                            "green_signals": ["Active vendor"],
+                            "yellow_signals": [],
+                            "red_signals": [],
+                            "reasoning": "Verified.",
+                            "citations": [
+                                {"title": "Hallucinated", "url": "https://fake-source.invalid/report"},
+                                {"title": "Vendor Legal", "url": "https://vendor.de/imprint"},
+                            ],
+                        }
+                    )
+                }
+            }
+        ]
+    }
+    stage1_cites = [WebCitation("Real News", "https://reuters.com/vendor")]
+    intel = parse_openrouter_response(payload, extra_citations=stage1_cites, allowed_host="vendor.de")
+    urls = {c.url for c in intel.citations}
+    assert "https://fake-source.invalid/report" not in urls
+    assert "https://vendor.de/imprint" in urls
+    assert "https://reuters.com/vendor" in urls
+
+    empty_stage1_intel = parse_openrouter_response(payload, extra_citations=[], allowed_host="vendor.de")
+    assert {c.url for c in empty_stage1_intel.citations} == {"https://vendor.de/imprint"}
+
+
+def _partial_response(calls: list[str], body: dict[str, object]) -> httpx.Response:
+    if "plugins" not in body:
+        return httpx.Response(500)
+    ok_msg = {"choices": [{"message": {"content": "Offsite report ok", "annotations": []}}]}
+    return httpx.Response(503) if len(calls) == 1 else httpx.Response(200, json=ok_msg)
+
+
+def _make_partial_handler(calls: list[str]) -> Callable[[httpx.Request], httpx.Response]:
+    def _handle(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content.decode("utf-8"))
+        calls.append(str(body.get("model", "")))
+        return _partial_response(calls, body)
+
+    return _handle
+
+
+async def test_openrouter_adapter_handles_partial_stage1_error_and_stage2_500() -> None:
+    calls: list[str] = []
+    async with httpx.AsyncClient(transport=_mock_transport(_make_partial_handler(calls))) as client:
+        adapter = OpenRouterWebResearchAdapter(api_key="test-key", client=client)
+        res = await adapter.research_vendor(VendorInput("2", "https://vendor.de", "App", "Vendor"), "excerpt")
+    assert res.status == ProbeStatus.UNAVAILABLE
+    assert res.reason == "http_500"
+    assert len(calls) == 3

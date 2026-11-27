@@ -21,9 +21,12 @@ from src.domain.models import (
     EvidenceLedger,
     ProbeOutcome,
     SubprocessorMatch,
+    VendorClaim,
+    VendorSignals,
+    VendorSnapshot,
     WaybackTimeline,
 )
-from src.domain.rules import default_vendor_rules
+from src.domain.rules import default_vendor_rules, evaluate_vendor
 from src.ports.probes import VendorProbeGateway
 from src.ports.research import ResearchGateway
 
@@ -48,7 +51,7 @@ class StubDns:
 
 class StubSubprocessor:
     async def lookup_subprocessor(self, domain: str) -> ProbeOutcome[SubprocessorMatch]:
-        return ProbeOutcome.not_found(f"https://subprocessors.local/{domain}")
+        return ProbeOutcome.not_found(f"https://github.com/search?q={domain}")
 
 
 class StubWayback:
@@ -184,3 +187,82 @@ def test_assess_from_evidence_fallback_yellow_and_green() -> None:
     clean_dom: ProbeOutcome[DomForensics] = ProbeOutcome.unavailable("https://www.cadkas.com/index.php", "timeout")
     green_res = assess_from_evidence(item, EvidenceLedger(), clean_dom, web)
     assert green_res.overall == StackginiVerdict.GREEN
+
+
+def test_resolve_overall_never_overrides_fraud_risk_or_web_reds_with_green() -> None:
+    item = VendorInput("99", "https://shady.example/", "ShadyApp", "Shady LLC")
+    dom = ProbeOutcome.observed(
+        "https://shady.example/",
+        DomForensics("https://shady.example/", "Shady", "Enterprise tool", 0, (), 900, claimed_year=2015),
+    )
+    bad_signals = VendorSignals(
+        rdap=ProbeOutcome.observed("https://rdap.org/domain/shady.example", DomainAgeRecord(2026, 20)),
+        certs=ProbeOutcome.not_found("https://crt.sh/?q=shady.example"),
+        dns=ProbeOutcome.observed("https://dns.google/resolve?name=shady.example", DnsProfile((), "", "")),
+        subprocessor=ProbeOutcome.not_found("https://github.com/search?q=shady.example"),
+        wayback=ProbeOutcome.not_found("https://web.archive.org/cdx"),
+    )
+
+    fraud_ledger = evaluate_vendor(
+        VendorSnapshot(VendorClaim("shady.example", 2026, claimed_since_year=2015), bad_signals),
+        default_vendor_rules(),
+    )
+    optimistic_web = ProbeOutcome.observed(
+        "https://news.google.com/",
+        WebIntelligence(StackginiVerdict.GREEN, "Looks ok", (), (), (), ()),
+    )
+    result = assess_from_evidence(item, fraud_ledger, dom, optimistic_web)
+    assert result.overall == StackginiVerdict.RED
+    assert result.red_flags
+
+
+async def test_assess_vendor_wires_dom_claimed_year_into_rdap_backdate_check() -> None:
+    probes = VendorProbeGateway(
+        rdap=StubRdap(),
+        certs=StubCerts(),
+        dns=StubDns(),
+        subprocessor=StubSubprocessor(),
+        wayback=StubWayback(),
+    )
+    dom_outcome = ProbeOutcome.observed(
+        "https://backdated.example/",
+        DomForensics("https://backdated.example/", "App", "Copyright 2005", 0, (), 800, claimed_year=2005),
+    )
+    web_outcome: ProbeOutcome[WebIntelligence] = ProbeOutcome.not_found("https://news.google.com/", "none")
+    verify_use_case = VerifyVendorUseCase(probes, default_vendor_rules())
+    gateway = ResearchGateway(page=StubPagePort(dom_outcome), research=StubResearchPort(web_outcome))
+    assessment = await AssessVendorUseCase(verify_use_case, gateway).execute(
+        VendorInput("101", "https://backdated.example/", "Backdated", "Test Co"),
+        current_year=2026,
+    )
+    assert any("2005" in flag for flag in assessment.yellow_flags)
+    assert any(f.rule_id == "rdap_backdated_claim" for f in assessment.ledger.findings)
+
+
+def test_assess_from_evidence_all_abstained_returns_yellow_not_green_and_picks_docx_url() -> None:
+    item = VendorInput("102", "https://blind.example/", "Blind", "Blind Co")
+    blind_ledger = EvidenceLedger(abstained=("rdap", "certs", "wayback"))
+    res = assess_from_evidence(
+        item,
+        blind_ledger,
+        ProbeOutcome.unavailable("https://blind.example/", "timeout"),
+        ProbeOutcome.unavailable("https://news.google.com/", "upstream_probes_unavailable"),
+    )
+    assert res.overall == StackginiVerdict.YELLOW
+
+    docx_dom = ProbeOutcome.observed(
+        "https://blind.example/",
+        DomForensics(
+            "https://blind.example/",
+            "Blind",
+            "App",
+            0,
+            ("https://blind.example/imprint", "https://blind.example/terms.docx"),
+            800,
+        ),
+    )
+    docx_res = assess_from_evidence(
+        item, EvidenceLedger(), docx_dom, ProbeOutcome.not_found("https://news.google.com/")
+    )
+    assert docx_res.overall == StackginiVerdict.RED
+    assert "terms.docx" in docx_res.red_flags[0]

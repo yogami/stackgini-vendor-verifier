@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import UTC, datetime
+from types import SimpleNamespace
 
 import httpx
 import pytest
 from fastapi.testclient import TestClient
+from whois import WhoisError
 
-from src.api.app import _default_use_case, create_app
+from src.api.app import build_default_assess_use_case, build_verify_use_case, create_app
 from src.domain.models import (
     CertFootprint,
     DnsProfile,
@@ -28,7 +31,7 @@ from src.domain.rules import (
     SubprocessorCorroborationRule,
     evaluate_vendor,
 )
-from src.infrastructure.http_probes import CrtShHttpAdapter, RdapHttpAdapter, WaybackHttpAdapter
+from src.infrastructure.http_probes import CrtShHttpAdapter, RdapHttpAdapter, RdapWithWhoisAdapter, WaybackHttpAdapter
 from src.infrastructure.ssrf import normalize_public_domain
 
 
@@ -114,7 +117,7 @@ def test_rules_edge_branches_and_ssrf_global_ip() -> None:
         rdap=ProbeOutcome.observed("https://rdap.org/domain/x.de", DomainAgeRecord(2025, 400)),
         certs=ProbeOutcome(status=ProbeStatus.OBSERVED, source_url="https://crt.sh/?q=x.de", value=None),
         dns=ProbeOutcome(status=ProbeStatus.OBSERVED, source_url="https://dns.google/resolve", value=None),
-        subprocessor=ProbeOutcome.observed("https://subprocessors.local/x.de", SubprocessorMatch(())),
+        subprocessor=ProbeOutcome.observed("https://github.com/search?q=x.de", SubprocessorMatch(())),
         wayback=ProbeOutcome.observed("https://web.archive.org/cdx", WaybackTimeline(50, None)),
     )
     snap = VendorSnapshot(claim=VendorClaim("x.de", 2026, claimed_since_year=2025), signals=signals)
@@ -130,18 +133,79 @@ def test_rules_edge_branches_and_ssrf_global_ip() -> None:
     assert ledger.trust_score() == 70
 
 
-def test_api_default_factory_and_health_route() -> None:
-    use_case = _default_use_case(2026)
-    client = TestClient(create_app(use_case=use_case))
-    resp = client.get("/health")
-    assert resp.status_code == 200
-    assert resp.json() == {"status": "ok"}
-    bad = client.post("/api/v1/verify", json={"domain": "localhost"})
-    assert bad.status_code == 422
+def test_api_default_factory_dashboard_and_health_route() -> None:
+    transport = httpx.MockTransport(lambda _r: httpx.Response(404))
+    async_client = httpx.AsyncClient(transport=transport)
+    use_case = build_verify_use_case(2026, async_client)
+    with TestClient(create_app(use_case=use_case)) as client:
+        resp = client.get("/health")
+        assert resp.status_code == 200
+        assert resp.json() == {"status": "ok"}
+        dash = client.get("/")
+        assert dash.status_code == 200
+        assert "Stackgini Vendor Verifier" in dash.text
+        bad = client.post("/api/v1/verify", json={"domain": "localhost"})
+        assert bad.status_code == 422
+
+    assert build_default_assess_use_case(2026, async_client) is not None
+    default_client = TestClient(create_app())
+    assert default_client.get("/health").status_code == 200
 
 
 def test_dns_profile_and_cert_footprint_helpers() -> None:
-    profile = DnsProfile((), "v=spf1 ~all", "")
+    profile = DnsProfile((), "v=spf1 ~all", "", ("docusign", "google", "stripe"))
     assert profile.has_auth_txt() is True
     assert profile.has_full_auth() is False
-    assert CertFootprint(3, 2024).earliest_year == 2024
+    assert profile.saas_count() == 3
+    footprint = CertFootprint(8, 2020, latest_year=2025, operational_subdomains=("api", "auth"))
+    assert footprint.earliest_year == 2020
+    assert footprint.renewal_span_years() == 5
+
+
+async def test_crtsh_extracts_operational_subdomains_and_rdap_handles_bad_date(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    transport = httpx.MockTransport(
+        _route_handler(
+            {
+                "rdap.org": httpx.Response(
+                    200, json={"events": [{"eventAction": "registration", "eventDate": "not-an-iso-date"}]}
+                ),
+                "crt.sh": httpx.Response(
+                    200,
+                    json=[
+                        {"not_before": "2020-05-01", "name_value": "api.ok.de\nauth.ok.de"},
+                        {"not_before": "2025-05-01", "name_value": "status.ok.de"},
+                    ],
+                ),
+            }
+        )
+    )
+    monkeypatch.setattr(
+        "src.infrastructure.http_probes.whois.whois",
+        lambda _d: SimpleNamespace(creation_date=datetime(2019, 6, 1, tzinfo=UTC)),
+    )
+    async with httpx.AsyncClient(transport=transport) as client:
+        rdap = RdapHttpAdapter(client, current_year=2026)
+        composite = RdapWithWhoisAdapter(rdap, current_year=2026)
+        age = await composite.fetch_domain_age("ok.de")
+        crt = await CrtShHttpAdapter(client).fetch_cert_history("ok.de")
+
+    assert age.status == ProbeStatus.OBSERVED
+    assert age.value is not None
+    assert age.value.registered_year == 2019
+    assert crt.status == ProbeStatus.OBSERVED
+    assert crt.value is not None
+    assert crt.value.operational_subdomains == ("api", "auth", "status")
+    assert crt.value.renewal_span_years() == 5
+
+
+async def test_rdap_with_whois_catches_pywhois_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    def _raise_whois(_d: str) -> object:
+        raise WhoisError("No match")
+
+    monkeypatch.setattr("src.infrastructure.http_probes.whois.whois", _raise_whois)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(lambda _r: httpx.Response(404))) as client:
+        composite = RdapWithWhoisAdapter(RdapHttpAdapter(client, current_year=2026), current_year=2026)
+        outcome = await composite.fetch_domain_age("unregistered.example")
+    assert outcome.status == ProbeStatus.NOT_FOUND

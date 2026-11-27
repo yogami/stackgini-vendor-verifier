@@ -1,9 +1,10 @@
-"""SSRF protection and domain normalization for untrusted vendor inputs."""
+"""SSRF protection, DNS-rebinding guards, and domain normalization for vendor inputs."""
 
 from __future__ import annotations
 
 import ipaddress
 import re
+import socket
 from urllib.parse import urlparse
 
 DOMAIN_PATTERN = re.compile(r"^(?=.{3,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$")
@@ -54,3 +55,31 @@ def normalize_public_domain(raw_input: str) -> str:
     if not DOMAIN_PATTERN.match(host):
         raise ValueError(f"Invalid public domain format: {host}")
     return host
+
+
+def normalize_public_url(raw_input: str) -> str:
+    """Ensure raw_input resolves to a valid public HTTP(S) URL string."""
+    candidate = _prepare_candidate_url(raw_input)
+    normalize_public_domain(candidate)
+    return candidate
+
+
+def _resolved_ip_strings(host: str) -> tuple[str, ...]:
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except OSError:
+        return ()
+    return tuple(str(entry[4][0]).split("%", 1)[0] for entry in infos if entry[4])
+
+
+def verify_resolved_public_ips(host: str) -> None:
+    """Reject hostnames resolving via DNS to private, loopback, or link-local IPs."""
+    for ip_str in _resolved_ip_strings(host):
+        _reject_non_global_ip(ip_str)
+
+
+def verify_public_url_with_dns(raw_input: str) -> str:
+    """Validate URL syntax and enforce DNS global-IP check against rebinding."""
+    normalized = normalize_public_url(raw_input)
+    verify_resolved_public_ips(normalize_public_domain(normalized))
+    return normalized

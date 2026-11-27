@@ -77,15 +77,24 @@ class CertFootprint:
 
     cert_count: int
     earliest_year: int | None
+    latest_year: int | None = None
+    operational_subdomains: tuple[str, ...] = ()
+
+    def renewal_span_years(self) -> int:
+        """Return span in years between earliest and latest observed certificates."""
+        if self.earliest_year is None or self.latest_year is None:
+            return 0
+        return max(0, self.latest_year - self.earliest_year)
 
 
 @dataclass(frozen=True)
 class DnsProfile:
-    """MX and authentication TXT records for a vendor domain."""
+    """MX, authentication TXT, and third-party SaaS verification records for a vendor domain."""
 
     mx_hosts: tuple[str, ...]
     spf_record: str
     dmarc_record: str
+    saas_verifications: tuple[str, ...] = ()
 
     def has_auth_txt(self) -> bool:
         """Return True when either SPF or DMARC policy is published."""
@@ -95,12 +104,17 @@ class DnsProfile:
         """Return True when both MX delivery and DMARC enforcement are present."""
         return bool(self.mx_hosts and self.dmarc_record)
 
+    def saas_count(self) -> int:
+        """Return count of verified third-party SaaS TXT integrations."""
+        return len(self.saas_verifications)
+
 
 @dataclass(frozen=True)
 class SubprocessorMatch:
-    """Reverse lookup result across public enterprise GDPR subprocessor lists."""
+    """Lookup result across public enterprise GDPR subprocessor lists and vendor DPA URLs."""
 
-    enterprise_refs: tuple[str, ...]
+    enterprise_refs: tuple[str, ...] = ()
+    dpa_url: str = ""
 
 
 @dataclass(frozen=True)

@@ -26,9 +26,15 @@ MISSING_CERTS_PENALTY = -25
 SINGLE_CERT_PENALTY = -10
 ESTABLISHED_CERT_COUNT = 5
 ESTABLISHED_CERT_BONUS = 5
+MIN_OPERATIONAL_SUBDOMAINS = 2
+MIN_CERT_SPAN_YEARS = 2
+SUBDOMAIN_DEPTH_BONUS = 5
 NO_DNS_AUTH_PENALTY = -20
 FULL_DNS_AUTH_BONUS = 5
+MIN_SAAS_VERIFICATIONS = 3
+SAAS_STACK_BONUS = 5
 SUBPROCESSOR_BONUS = 10
+VENDOR_DPA_BONUS = 3
 MISSING_WAYBACK_PENALTY = -20
 ESTABLISHED_WAYBACK_SNAPSHOTS = 10
 ESTABLISHED_WAYBACK_YEARS = 2
@@ -124,13 +130,28 @@ def _append_if_present(ledger: EvidenceLedger, finding: VerifiedFinding | None) 
     return ledger.with_finding(finding) if finding is not None else ledger
 
 
+def _cert_subdomain_finding(source_url: str, footprint: CertFootprint) -> VerifiedFinding | None:
+    sub_count = len(footprint.operational_subdomains)
+    span = footprint.renewal_span_years()
+    if sub_count < MIN_OPERATIONAL_SUBDOMAINS and span < MIN_CERT_SPAN_YEARS:
+        return None
+    return VerifiedFinding(
+        rule_id="cert_subdomains",
+        claim="Certificate Transparency operational infrastructure",
+        source_url=source_url,
+        observed_fact=f"operational_subdomains={sub_count},renewal_span_years={span}",
+        impact=SUBDOMAIN_DEPTH_BONUS,
+    )
+
+
 def _evaluate_observed_certs(
     source_url: str, footprint: CertFootprint | None, ledger: EvidenceLedger
 ) -> EvidenceLedger:
     if footprint is None:
         return ledger
-    finding = _single_cert_finding(source_url, footprint) or _established_cert_finding(source_url, footprint)
-    return _append_if_present(ledger, finding)
+    primary = _single_cert_finding(source_url, footprint) or _established_cert_finding(source_url, footprint)
+    updated = _append_if_present(ledger, primary)
+    return _append_if_present(updated, _cert_subdomain_finding(source_url, footprint))
 
 
 def _evaluate_cert_probe(probe: ProbeOutcome[CertFootprint], ledger: EvidenceLedger) -> EvidenceLedger:
@@ -182,11 +203,25 @@ def _full_dns_finding(source_url: str, profile: DnsProfile) -> VerifiedFinding |
     )
 
 
+def _saas_stack_finding(source_url: str, profile: DnsProfile) -> VerifiedFinding | None:
+    if profile.saas_count() < MIN_SAAS_VERIFICATIONS:
+        return None
+    preview = ",".join(profile.saas_verifications[:MIN_SAAS_VERIFICATIONS])
+    return VerifiedFinding(
+        rule_id="dns_saas_stack",
+        claim="DNS third-party SaaS verification footprint",
+        source_url=source_url,
+        observed_fact=f"saas_tokens={profile.saas_count()} ({preview})",
+        impact=SAAS_STACK_BONUS,
+    )
+
+
 def _evaluate_observed_dns(source_url: str, profile: DnsProfile | None, ledger: EvidenceLedger) -> EvidenceLedger:
     if profile is None:
         return ledger
     finding = _missing_dns_finding(source_url, profile) or _full_dns_finding(source_url, profile)
-    return _append_if_present(ledger, finding)
+    updated = _append_if_present(ledger, finding)
+    return _append_if_present(updated, _saas_stack_finding(source_url, profile))
 
 
 class DnsAuthSignalRule:
@@ -200,22 +235,39 @@ class DnsAuthSignalRule:
         return _evaluate_observed_dns(probe.source_url, probe.value, ledger)
 
 
+def _enterprise_subprocessor_finding(source_url: str, match: SubprocessorMatch) -> VerifiedFinding | None:
+    if not match.enterprise_refs:
+        return None
+    return VerifiedFinding(
+        rule_id="subprocessor_corroborated",
+        claim="Enterprise GDPR subprocessor reverse lookup",
+        source_url=source_url,
+        observed_fact=f"enterprise_refs={len(match.enterprise_refs)}",
+        impact=SUBPROCESSOR_BONUS,
+    )
+
+
+def _vendor_dpa_finding(source_url: str, match: SubprocessorMatch) -> VerifiedFinding | None:
+    if not match.dpa_url:
+        return None
+    return VerifiedFinding(
+        rule_id="vendor_dpa_published",
+        claim="Vendor DPA or subprocessor registry endpoint",
+        source_url=match.dpa_url if match.dpa_url.startswith(("http://", "https://")) else source_url,
+        observed_fact="public_dpa_endpoint=present",
+        impact=VENDOR_DPA_BONUS,
+    )
+
+
 def _evaluate_observed_subprocessor(
     source_url: str,
     match: SubprocessorMatch | None,
     ledger: EvidenceLedger,
 ) -> EvidenceLedger:
-    if match is None or not match.enterprise_refs:
+    if match is None:
         return ledger
-    return ledger.with_finding(
-        VerifiedFinding(
-            rule_id="subprocessor_corroborated",
-            claim="Enterprise GDPR subprocessor reverse lookup",
-            source_url=source_url,
-            observed_fact=f"enterprise_refs={len(match.enterprise_refs)}",
-            impact=SUBPROCESSOR_BONUS,
-        )
-    )
+    updated = _append_if_present(ledger, _enterprise_subprocessor_finding(source_url, match))
+    return _append_if_present(updated, _vendor_dpa_finding(source_url, match))
 
 
 def _evaluate_subprocessor_probe(probe: ProbeOutcome[SubprocessorMatch], ledger: EvidenceLedger) -> EvidenceLedger:

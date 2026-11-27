@@ -5,12 +5,17 @@ from __future__ import annotations
 import asyncio
 import csv
 import json
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
-from src.application.assess_vendor import AssessVendorUseCase
-from src.domain.assessment import StackginiAssessment, VendorInput
+import httpx
+import whois
 
+from src.application.assess_vendor import AssessVendorUseCase
+from src.domain.assessment import StackginiAssessment, StackginiVerdict, VendorInput
+
+REQUIRED_COLUMNS = ("id", "url", "product", "vendor")
 OUTPUT_COLUMNS = [
     "id",
     "url",
@@ -22,24 +27,40 @@ OUTPUT_COLUMNS = [
     "red_flags",
     "reasoning",
 ]
+MAX_INLINE_SOURCES = 5
+POLITE_HOST_GAP_SECONDS = 0.25
+
+
+def _missing_columns(present: set[str]) -> list[str]:
+    return [col for col in REQUIRED_COLUMNS if col not in present]
+
+
+def _validate_headers(fieldnames: Sequence[str] | None) -> None:
+    present = set(fieldnames or ())
+    missing = _missing_columns(present)
+    if missing:
+        raise ValueError(f"Missing required CSV columns: {', '.join(missing)}")
+
+
+def _row_to_vendor_input(row: dict[str, str]) -> VendorInput:
+    return VendorInput(
+        row_id=str(row.get("id", "")).strip(),
+        url=str(row.get("url", "")).strip(),
+        product=str(row.get("product", "")).strip(),
+        vendor=str(row.get("vendor", "")).strip(),
+    )
+
+
+def _load_validated_rows(csv_path: Path) -> list[VendorInput]:
+    with csv_path.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        _validate_headers(reader.fieldnames)
+        return [_row_to_vendor_input(row) for row in reader]
 
 
 def read_vendor_csv(csv_path: Path) -> list[VendorInput]:
-    """Load id,url,product,vendor rows from a Stackgini CSV file."""
-    with csv_path.open(encoding="utf-8", newline="") as handle:
-        reader = csv.DictReader(handle)
-        return [
-            VendorInput(
-                row_id=str(row.get("id", "")).strip(),
-                url=str(row.get("url", "")).strip(),
-                product=str(row.get("product", "")).strip(),
-                vendor=str(row.get("vendor", "")).strip(),
-            )
-            for row in reader
-        ]
-
-
-MAX_INLINE_SOURCES = 5
+    """Load and validate id,url,product,vendor rows from a Stackgini CSV file."""
+    return [item for item in _load_validated_rows(csv_path) if any((item.row_id, item.url))]
 
 
 def _format_flags(flags: tuple[str, ...]) -> str:
@@ -68,6 +89,26 @@ def _assessment_to_row(assessment: StackginiAssessment) -> dict[str, str]:
     }
 
 
+def _probe_summary_payload(assessment: StackginiAssessment) -> dict[str, object]:
+    ledger = assessment.ledger
+    return {
+        "trust_score": ledger.trust_score(),
+        "verdict": ledger.verdict().value,
+        "abstained": list(ledger.abstained),
+        "findings": [
+            {
+                "rule_id": f.rule_id,
+                "claim": f.claim,
+                "observed_fact": f.observed_fact,
+                "impact": f.impact,
+                "source_url": f.source_url,
+            }
+            for f in ledger.findings
+        ],
+        "dom_summary": assessment.dom_summary,
+    }
+
+
 def _sources_payload(assessments: list[StackginiAssessment]) -> list[dict[str, object]]:
     return [
         {
@@ -75,6 +116,7 @@ def _sources_payload(assessments: list[StackginiAssessment]) -> list[dict[str, o
             "url": a.item.url,
             "overall": a.overall.value,
             "source_urls": list(a.source_urls),
+            "technical_probes": _probe_summary_payload(a),
         }
         for a in assessments
     ]
@@ -94,6 +136,18 @@ def write_assessment_outputs(output_csv: Path, assessments: list[StackginiAssess
     return sources_path
 
 
+def _row_error_fallback(item: VendorInput, exc: Exception) -> StackginiAssessment:
+    return StackginiAssessment(
+        item=item,
+        overall=StackginiVerdict.YELLOW,
+        green_flags=(),
+        yellow_flags=(f"Assessment skipped due to row validation or runtime error: {type(exc).__name__}",),
+        red_flags=(),
+        reasoning=f"Row could not be assessed automatically ({type(exc).__name__}: {exc}).",
+        source_urls=(),
+    )
+
+
 async def _assess_with_limit(
     sem: asyncio.Semaphore,
     use_case: AssessVendorUseCase,
@@ -101,7 +155,11 @@ async def _assess_with_limit(
     current_year: int,
 ) -> StackginiAssessment:
     async with sem:
-        return await use_case.execute(item, current_year=current_year)
+        await asyncio.sleep(POLITE_HOST_GAP_SECONDS)
+        try:
+            return await use_case.execute(item, current_year=current_year)
+        except (httpx.HTTPError, whois.WhoisError, ValueError, RuntimeError, OSError) as exc:
+            return _row_error_fallback(item, exc)
 
 
 async def run_csv_batch(

@@ -8,6 +8,7 @@ import os
 
 import httpx
 from google import genai
+from google.genai import errors as genai_errors
 from google.genai import types
 from pydantic import BaseModel, Field
 
@@ -18,25 +19,27 @@ DEFAULT_GEMINI_MODEL = "gemini-4-hydrogen"
 GROUNDING_SOURCE_URL = "https://generativelanguage.googleapis.com/"
 
 _CALIBRATION_PROMPT = """You are a senior software procurement due-diligence analyst evaluating a vendor for Stackgini.
-Use Google Search extensively to check off-site facts that are NOT on the vendor marketing page.
+Use Google Search extensively to check off-site facts beyond the vendor marketing page.
 
 Target:
 - URL: {url}
 - Product: {product}
 - Vendor: {vendor}
-- Rendered DOM Excerpt: {dom_excerpt}
+<untrusted_webpage_excerpt>
+{dom_excerpt}
+</untrusted_webpage_excerpt>
 
-Check these off-site dimensions:
-1. Regulatory fines, DPA/GDPR rulings, FTC orders, lawsuits, or geopolitical exposure (e.g. Russia ops).
-2. Security breaches and disclosure transparency (Mandiant post-mortem vs silent status-page-only notice).
+Check these external dimensions:
+1. Regulatory fines, DPA/GDPR rulings, FTC orders, lawsuits, or geopolitical/sanctions exposure.
+2. Security breaches and disclosure transparency (full public post-mortem vs quiet status-page notice).
 3. M&A, private equity carve-outs, ownership flips, renames/licensing confusion, or roadmap stalls.
-4. Community adoption, recent releases, third-party ecosystems, and company size vs claimed traction.
+4. Community adoption, recent releases, third-party ecosystems, and verifiable legal corporate identity.
 
 CRITICAL CALIBRATION RULES:
-- Do NOT downgrade an ugly or 1990s/2000s site if release history, foundation backing, or adoption is active.
-- Rate GREEN when the product is solid and active, even with minor M&A context or transparent incident disclosure.
-- Rate YELLOW for confusing multi-product naming/licensing traps, PE roadmap squeezes, or status-page breaches.
-- Rate RED for regulator fines, undisclosed sanctions risk, fake logos/metrics, missing entity, or AV-bypass EOL.
+- Do NOT downgrade an ugly or minimal site if release history, foundation backing, or adoption is active.
+- Rate GREEN when the product is solid and active; note M&A or resolved incidents in yellow_signals.
+- Rate YELLOW for multi-product naming/licensing traps, PE roadmap squeezes, or status-page breaches.
+- Rate RED for regulator fines, undisclosed sanctions risk, fake logos/metrics, missing entity, or EOL bypass.
 
 Keep each bullet concise and factual. Cite external evidence in reasoning."""
 
@@ -108,23 +111,30 @@ def _resolve_api_key(explicit_key: str | None) -> str:
     return (env_key if env_key else os.environ.get("GOOGLE_API_KEY", "")).strip()
 
 
+def _create_sync_http_client() -> httpx.Client:
+    try:
+        transport = httpx.HTTPTransport(local_address=str(ipaddress.IPv4Address(0)))
+        return httpx.Client(transport=transport, timeout=15.0)
+    except OSError:
+        return httpx.Client(timeout=15.0)
+
+
 def _invoke_gemini_sync(api_key: str, model: str, prompt: str) -> WebIntelligence:
-    ipv4_any = str(ipaddress.IPv4Address(0))
-    http_client = httpx.Client(transport=httpx.HTTPTransport(local_address=ipv4_any), timeout=15.0)
-    client = genai.Client(
-        api_key=api_key,
-        http_options=types.HttpOptions(httpx_client=http_client, retry_options=types.HttpRetryOptions(attempts=1)),
-    )
-    interaction = client.interactions.create(
-        model=model,
-        input=prompt,
-        tools=[{"type": "google_search"}],
-        response_format={
-            "type": "text",
-            "mime_type": "application/json",
-            "schema": _GeminiAssessmentSchema.model_json_schema(),
-        },
-    )
+    with _create_sync_http_client() as http_client:
+        client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(httpx_client=http_client, retry_options=types.HttpRetryOptions(attempts=1)),
+        )
+        interaction = client.interactions.create(
+            model=model,
+            input=prompt,
+            tools=[{"type": "google_search"}],
+            response_format={
+                "type": "text",
+                "mime_type": "application/json",
+                "schema": _GeminiAssessmentSchema.model_json_schema(),
+            },
+        )
     citations = extract_citations_from_steps(getattr(interaction, "steps", None))
     output_text = str(getattr(interaction, "output_text", "") or "")
     return parse_gemini_assessment_json(output_text, citations)
@@ -152,6 +162,6 @@ class GeminiWebResearchAdapter:
     async def _safe_query(self, prompt: str) -> ProbeOutcome[WebIntelligence]:
         try:
             intel = await asyncio.to_thread(_invoke_gemini_sync, self._api_key, self._model, prompt)
-        except Exception as exc:
+        except (genai_errors.APIError, httpx.HTTPError, ValueError, OSError) as exc:
             return ProbeOutcome.unavailable(GROUNDING_SOURCE_URL, type(exc).__name__)
         return ProbeOutcome.observed(GROUNDING_SOURCE_URL, intel)

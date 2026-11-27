@@ -39,9 +39,64 @@ def test_parse_news_rss_items_extracts_titles_and_links() -> None:
 
 
 def test_scan_dom_text_signals_flags_eol_and_placeholders() -> None:
-    reds, yellows = scan_dom_text_signals("2026 ist das letzte Jahr. Trotzdem ausführen. {{PRICE}} coming soon")
+    reds, yellows = scan_dom_text_signals("Software is discontinued. Click Run Anyway on Defender. {{PRICE_TIER}}")
     assert len(reds) >= 1
     assert len(yellows) >= 1
+
+
+async def test_public_signals_returns_unavailable_on_all_errors_and_not_found_on_empty_probes() -> None:
+    err_transport = httpx.MockTransport(lambda _req: httpx.Response(429))
+    async with httpx.AsyncClient(transport=err_transport) as client:
+        res = await PublicSignalsResearchAdapter(client=client).research_vendor(
+            VendorInput("50", "https://unknown.example/", "App", "Vendor"),
+            "Standard marketing text",
+        )
+    assert res.status == ProbeStatus.UNAVAILABLE
+    assert res.reason == "upstream_probes_unavailable"
+
+    empty_transport = httpx.MockTransport(
+        _mock_handler(
+            {
+                "news.google.com": httpx.Response(200, text="<rss><channel></channel></rss>"),
+                "en.wikipedia.org": httpx.Response(200, json={"query": {"search": []}}),
+                "api.github.com": httpx.Response(200, json={"items": []}),
+                "status.unknown.example": httpx.Response(404),
+            }
+        )
+    )
+    async with httpx.AsyncClient(transport=empty_transport) as client:
+        not_found_res = await PublicSignalsResearchAdapter(client=client).research_vendor(
+            VendorInput("51", "https://unknown.example/", "App", "Vendor"),
+            "Standard marketing text",
+        )
+    assert not_found_res.status == ProbeStatus.NOT_FOUND
+
+
+async def test_public_signals_ignores_stock_ticker_and_non_software_homonyms() -> None:
+    rss_xml = (
+        "<rss><channel>"
+        "<item><title>Broadcom Inc. $AVGO Stock Acquired by Fund LLC</title><link>https://ex.com/1</link></item>"
+        "<item><title>NutriBullet Blender Lawsuit Exploding Container</title><link>https://ex.com/2</link></item>"
+        "</channel></rss>"
+    )
+    transport = httpx.MockTransport(
+        _mock_handler(
+            {
+                "news.google.com": httpx.Response(200, text=rss_xml),
+                "en.wikipedia.org": httpx.Response(200, json={"query": {"search": [{"title": "Blender (software)"}]}}),
+                "api.github.com": httpx.Response(200, json={"items": []}),
+            }
+        )
+    )
+    async with httpx.AsyncClient(transport=transport) as client:
+        res = await PublicSignalsResearchAdapter(client=client).research_vendor(
+            VendorInput("6", "https://www.blender.org/", "Blender", "Blender Foundation"),
+            "Open source 3D creation suite",
+        )
+    assert res.status == ProbeStatus.OBSERVED
+    assert res.value is not None
+    assert res.value.suggested_overall == StackginiVerdict.GREEN
+    assert res.value.red_signals == ()
 
 
 async def test_public_signals_adapter_detects_red_ftc_and_green_wiki() -> None:

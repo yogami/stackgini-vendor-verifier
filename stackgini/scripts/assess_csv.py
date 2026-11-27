@@ -9,11 +9,14 @@ from pathlib import Path
 
 from src.api.app import build_default_assess_use_case
 from src.infrastructure.csv_batch import run_csv_batch
+from src.infrastructure.http_probes import make_resilient_async_client
 
 
 async def _run(input_csv: Path, output_csv: Path, concurrency: int) -> None:
-    use_case = build_default_assess_use_case(current_year=datetime.now(tz=UTC).year)
-    results = await run_csv_batch(use_case, input_csv, output_csv, concurrency=concurrency)
+    year = datetime.now(tz=UTC).year
+    async with make_resilient_async_client(timeout_seconds=45.0) as client:
+        use_case = build_default_assess_use_case(current_year=year, client=client)
+        results = await run_csv_batch(use_case, input_csv, output_csv, concurrency=concurrency)
     counts: dict[str, int] = {"Green": 0, "Yellow": 0, "Red": 0}
     for res in results:
         counts[res.overall.value] = counts.get(res.overall.value, 0) + 1

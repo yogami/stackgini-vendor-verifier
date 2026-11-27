@@ -48,7 +48,7 @@ class FakeSubprocessorProbe:
     """In-memory fake GDPR subprocessor port."""
 
     async def lookup_subprocessor(self, domain: str) -> ProbeOutcome[SubprocessorMatch]:
-        return ProbeOutcome.not_found(f"https://subprocessors.local/{domain}")
+        return ProbeOutcome.not_found(f"https://github.com/search?q={domain}")
 
 
 class FakeWaybackProbe:
