@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import multiprocessing
 import os
 import socket
@@ -14,6 +15,14 @@ import uvicorn
 from playwright.sync_api import Page, expect
 
 
+def _http_client() -> httpx.Client:
+    try:
+        transport = httpx.HTTPTransport(local_address=str(ipaddress.IPv4Address(0)))
+        return httpx.Client(transport=transport, timeout=10.0)
+    except OSError:
+        return httpx.Client(timeout=10.0)
+
+
 def _free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", 0))
@@ -22,7 +31,8 @@ def _free_port() -> int:
 
 def _probe_health(base_url: str) -> bool:
     try:
-        return httpx.get(f"{base_url}/health", timeout=2.0).status_code == 200
+        with _http_client() as client:
+            return client.get(f"{base_url}/health", timeout=3.0).status_code == 200
     except httpx.HTTPError:
         return False
 
@@ -66,18 +76,19 @@ def target_base_url(request: pytest.FixtureRequest) -> Iterator[str]:
 
 
 def test_live_health_openapi_and_ssrf_guard(target_base_url: str) -> None:
-    health = httpx.get(f"{target_base_url}/health", timeout=10.0)
-    assert health.status_code == 200
-    assert health.json() == {"status": "ok"}
+    with _http_client() as client:
+        health = client.get(f"{target_base_url}/health", timeout=10.0)
+        assert health.status_code == 200
+        assert health.json() == {"status": "ok"}
 
-    openapi = httpx.get(f"{target_base_url}/api/openapi.json", timeout=10.0)
-    assert openapi.status_code == 200
-    paths = openapi.json()["paths"]
-    assert "/api/v1/verify" in paths
-    assert "/api/v1/assess" in paths
+        openapi = client.get(f"{target_base_url}/api/openapi.json", timeout=10.0)
+        assert openapi.status_code == 200
+        paths = openapi.json()["paths"]
+        assert "/api/v1/verify" in paths
+        assert "/api/v1/assess" in paths
 
-    ssrf = httpx.post(f"{target_base_url}/api/v1/verify", json={"domain": "http://127.0.0.1:8000"}, timeout=10.0)
-    assert ssrf.status_code == 422
+        ssrf = client.post(f"{target_base_url}/api/v1/verify", json={"domain": "http://127.0.0.1:8000"}, timeout=10.0)
+        assert ssrf.status_code == 422
 
 
 def test_live_dashboard_browser_substance_assessment(page: Page, target_base_url: str) -> None:
