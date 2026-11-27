@@ -1,11 +1,30 @@
 #!/usr/bin/env bash
 set -euo pipefail
-echo "[pre-commit] Running Uncle Bob / Fowler / Kerievsky craftsmanship gates..."
-uv run ruff check src tests
-uv run ruff format --check src tests
-uv run mypy --strict src tests
-uv run xenon --max-absolute A --max-modules A --max-average A src
-uv run lint-imports
-uv run python scripts/craftsmanship_gate.py --require-ddd-dirs --require-specs
-uv run pytest tests/unit --cov=src --cov-branch --cov-fail-under=85 -q
+
+run_gates_in_dir() {
+    local dir="$1"
+    echo "[pre-commit] Running Uncle Bob / Fowler / Kerievsky craftsmanship gates in ${dir}..."
+    (
+        cd "$dir"
+        uv run ruff check src tests
+        uv run ruff format --check src tests
+        uv run mypy --strict src tests
+        uv run xenon --max-absolute A --max-modules A --max-average A src
+        uv run lint-imports
+        uv run python scripts/craftsmanship_gate.py --require-ddd-dirs --require-specs
+        uv run pytest tests/unit --cov=src --cov-branch --cov-fail-under=85 -q
+    )
+}
+
+for gate_script in */scripts/craftsmanship_gate.py; do
+    if [ -f "$gate_script" ]; then
+        subproject="${gate_script%/scripts/craftsmanship_gate.py}"
+        run_gates_in_dir "$subproject"
+    fi
+done
+
+if [ -f "scripts/craftsmanship_gate.py" ]; then
+    run_gates_in_dir "."
+fi
+
 echo "[pre-commit] All craftsmanship gates green."
