@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 from datetime import UTC, datetime
 
 import httpx
@@ -13,10 +14,12 @@ from src.application.verify_vendor import VerifyVendorUseCase
 from src.domain.assessment import StackginiAssessment, VendorInput
 from src.domain.models import EvidenceLedger, VendorClaim, VerifiedFinding
 from src.domain.rules import default_vendor_rules
+from src.infrastructure.composite_research import FallbackResearchAdapter
 from src.infrastructure.dns_subprocessor import CuratedSubprocessorAdapter, DnsResolverAdapter
 from src.infrastructure.gemini_research import GeminiWebResearchAdapter
 from src.infrastructure.http_probes import CrtShHttpAdapter, RdapHttpAdapter, WaybackHttpAdapter
 from src.infrastructure.playwright_dom import PlaywrightDomAdapter
+from src.infrastructure.public_research import PublicSignalsResearchAdapter
 from src.infrastructure.ssrf import normalize_public_domain
 from src.ports.probes import VendorProbeGateway
 from src.ports.research import ResearchGateway
@@ -109,7 +112,8 @@ def _serialize_assessment(assessment: StackginiAssessment) -> AssessVendorRespon
 
 
 def _default_use_case(current_year: int) -> VerifyVendorUseCase:
-    client = httpx.AsyncClient(headers={"User-Agent": "StackginiVerifier/0.2"})
+    transport = httpx.AsyncHTTPTransport(local_address=str(ipaddress.IPv4Address(0)))
+    client = httpx.AsyncClient(transport=transport, headers={"User-Agent": "StackginiVerifier/0.2"})
     gateway = VendorProbeGateway(
         rdap=RdapHttpAdapter(client, current_year=current_year),
         certs=CrtShHttpAdapter(client),
@@ -123,9 +127,12 @@ def _default_use_case(current_year: int) -> VerifyVendorUseCase:
 def build_default_assess_use_case(current_year: int, api_key: str | None = None) -> AssessVendorUseCase:
     """Wire full Stackgini assessment use case with live adapters."""
     verify_use_case = _default_use_case(current_year)
+    research_chain = FallbackResearchAdapter(
+        (GeminiWebResearchAdapter(api_key=api_key), PublicSignalsResearchAdapter())
+    )
     research_gateway = ResearchGateway(
         page=PlaywrightDomAdapter(),
-        research=GeminiWebResearchAdapter(api_key=api_key),
+        research=research_chain,
     )
     return AssessVendorUseCase(verify_use_case=verify_use_case, gateway=research_gateway)
 

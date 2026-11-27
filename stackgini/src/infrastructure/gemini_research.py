@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import os
 
+import httpx
 from google import genai
+from google.genai import types
 from pydantic import BaseModel, Field
 
 from src.domain.assessment import StackginiVerdict, VendorInput, WebCitation, WebIntelligence
@@ -106,7 +109,12 @@ def _resolve_api_key(explicit_key: str | None) -> str:
 
 
 def _invoke_gemini_sync(api_key: str, model: str, prompt: str) -> WebIntelligence:
-    client = genai.Client(api_key=api_key)
+    ipv4_any = str(ipaddress.IPv4Address(0))
+    http_client = httpx.Client(transport=httpx.HTTPTransport(local_address=ipv4_any), timeout=15.0)
+    client = genai.Client(
+        api_key=api_key,
+        http_options=types.HttpOptions(httpx_client=http_client, retry_options=types.HttpRetryOptions(attempts=1)),
+    )
     interaction = client.interactions.create(
         model=model,
         input=prompt,
