@@ -130,8 +130,20 @@ def _ledger_green_flags(ledger: EvidenceLedger) -> tuple[str, ...]:
     return tuple(f"{f.claim}: {f.observed_fact} ({f.source_url})" for f in ledger.findings if f.impact > 0)
 
 
-def _ledger_red_flags(ledger: EvidenceLedger) -> tuple[str, ...]:
+def _infra_caution_flags(ledger: EvidenceLedger) -> tuple[str, ...]:
     return tuple(f"{f.claim}: {f.observed_fact} ({f.source_url})" for f in ledger.findings if f.impact < 0)
+
+
+def _infra_red_flags(ledger: EvidenceLedger) -> tuple[str, ...]:
+    if ledger.verdict() != Verdict.FRAUD_RISK:
+        return ()
+    return _infra_caution_flags(ledger)
+
+
+def _infra_yellow_flags(ledger: EvidenceLedger) -> tuple[str, ...]:
+    if ledger.verdict() == Verdict.FRAUD_RISK:
+        return ()
+    return _infra_caution_flags(ledger)
 
 
 def _dom_sources(dom: ProbeOutcome[DomForensics]) -> tuple[str, ...]:
@@ -182,7 +194,7 @@ def _resolve_overall(
     return (
         web.value.suggested_overall
         if web.value is not None
-        else _fallback_verdict(ledger, _ledger_red_flags(ledger), yellow_flags)
+        else _fallback_verdict(ledger, _infra_red_flags(ledger), yellow_flags)
     )
 
 
@@ -215,8 +227,8 @@ def assess_from_evidence(
     """Combine technical probes, Playwright DOM forensics, and web research into a verdict."""
     dom_reds = _dom_red_flags(dom)
     green_flags = _dedupe((*_web_tuple(web, "green_signals"), *_ledger_green_flags(ledger)))
-    yellow_flags = _dedupe((*_web_tuple(web, "yellow_signals"), *_dom_yellow_flags(dom)))
-    red_flags = _dedupe((*_web_tuple(web, "red_signals"), *dom_reds, *_ledger_red_flags(ledger)))
+    yellow_flags = _dedupe((*_web_tuple(web, "yellow_signals"), *_dom_yellow_flags(dom), *_infra_yellow_flags(ledger)))
+    red_flags = _dedupe((*_web_tuple(web, "red_signals"), *dom_reds, *_infra_red_flags(ledger)))
     overall = _resolve_overall(ledger, dom_reds, yellow_flags, web)
     return StackginiAssessment(
         item=item,

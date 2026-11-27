@@ -18,6 +18,7 @@ from src.infrastructure.composite_research import FallbackResearchAdapter
 from src.infrastructure.dns_subprocessor import CuratedSubprocessorAdapter, DnsResolverAdapter
 from src.infrastructure.gemini_research import GeminiWebResearchAdapter
 from src.infrastructure.http_probes import CrtShHttpAdapter, RdapHttpAdapter, WaybackHttpAdapter
+from src.infrastructure.openrouter_research import OpenRouterWebResearchAdapter
 from src.infrastructure.playwright_dom import PlaywrightDomAdapter
 from src.infrastructure.public_research import PublicSignalsResearchAdapter
 from src.infrastructure.ssrf import normalize_public_domain
@@ -128,7 +129,11 @@ def build_default_assess_use_case(current_year: int, api_key: str | None = None)
     """Wire full Stackgini assessment use case with live adapters."""
     verify_use_case = _default_use_case(current_year)
     research_chain = FallbackResearchAdapter(
-        (GeminiWebResearchAdapter(api_key=api_key), PublicSignalsResearchAdapter())
+        (
+            OpenRouterWebResearchAdapter(),
+            GeminiWebResearchAdapter(api_key=api_key),
+            PublicSignalsResearchAdapter(),
+        )
     )
     research_gateway = ResearchGateway(
         page=PlaywrightDomAdapter(),
