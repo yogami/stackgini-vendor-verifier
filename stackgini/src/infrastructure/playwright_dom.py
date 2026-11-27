@@ -33,6 +33,7 @@ _DOM_EXTRACTION_JS = """() => {
     const legalHints = ["privacy", "datenschutz", "imprint", "impressum", "legal", "trust", "terms", "security"];
     let deadSocial = 0;
     const legalDocs = [];
+    const logoAlts = [];
     for (const a of anchors) {
         const rawHref = (a.getAttribute("href") || "").trim();
         const blob = (rawHref + " " + (a.getAttribute("aria-label") || "") + " " + (a.innerText || "")).toLowerCase();
@@ -43,7 +44,19 @@ _DOM_EXTRACTION_JS = """() => {
             legalDocs.push(a.href);
         }
     }
-    return { title, visible_text: text.slice(0, 8000), dead_social_links: deadSocial, legal_doc_urls: legalDocs };
+    for (const img of Array.from(document.querySelectorAll("img[alt]"))) {
+        const alt = (img.getAttribute("alt") || "").trim();
+        if (alt.length >= 2 && alt.length <= 60 && logoAlts.length < 20) {
+            logoAlts.push(alt);
+        }
+    }
+    const altBlock = logoAlts.length ? "\\n[IMG_ALTS]: " + logoAlts.join(" | ") : "";
+    return {
+        title,
+        visible_text: (text.slice(0, 7200) + altBlock).slice(0, 8000),
+        dead_social_links: deadSocial,
+        legal_doc_urls: legalDocs,
+    };
 }"""
 
 

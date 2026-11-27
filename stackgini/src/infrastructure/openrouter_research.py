@@ -24,7 +24,7 @@ OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_SEARCH_MODEL = "openai/gpt-4o-mini"
 DEFAULT_SYNTHESIS_MODEL = "anthropic/claude-sonnet-4.5"
 TIMEOUT_SECONDS = 45.0
-MAX_WEB_RESULTS = 5
+MAX_WEB_RESULTS = 6
 MAX_DOSSIER_TOKENS = 950
 HTTP_OK = 200
 
@@ -60,27 +60,30 @@ Product & Ownership Dossier:
 Off-Site Enforcement, Breach & Risk Dossier:
 {offsite_dossier}
 
-CALIBRATION RULES (FOLLOW CAREFULLY):
-1. LEGACY / SINGLE-DEV / STARTUP CALIBRATION -> GREEN (with caveats in yellow_signals):
-   - NEVER downgrade ugly, 1990s/2000s, or minimal websites if active releases, paid workshops, or adoption exist.
-   - Established single-developer tools with multi-year/decade adoption or current 2025-2026 releases are GREEN
-     (note bus-factor/commercial-license nuance in yellow_signals; ONLY Yellow if recent supply-chain hijack
-     or developer explicitly states day-job hobbyist with tiny traction).
-   - Valid YC-backed or early-stage startups with clear working self-serve pricing are GREEN.
-   - Solid enterprise leaders with ONE carve-out/acquisition or a transparently remediated past incident
-     with published external forensics (e.g. Mandiant) are GREEN (list M&A/CEO/incident notes in yellow_signals).
+CALIBRATION RULES (FOLLOW CAREFULLY - DO NOT BE OVERLY STRICT ON LEGITIMATE VENDORS):
+1. GREEN (Trustworthy / Active, list caveats in yellow_signals):
+   - NEVER downgrade ugly, 1990s/2000s, or minimal sites if releases, paid workshops, or adoption prove active use.
+   - Widely adopted single-developer tools (100k+/millions of users or decades of releases) are GREEN
+     (note bus-factor/license in yellow_signals; only Yellow if recent supply-chain hijack or tiny weekend hobbyist).
+   - Valid YC-backed or early startups with real self-serve pricing and transparent legal/terms are GREEN.
+   - Solid enterprise leaders with 1-2 clean acquisitions/carve-outs (e.g. parent bought + PE carve-out),
+     parent-company historical issues unrelated to this product, or past (>90 days) CVEs/breaches that were
+     transparently disclosed with external forensics/patches stay GREEN (put notes in yellow_signals).
 2. YELLOW (Moderate / Portfolio / Governance Risk):
-   - Chronic M&A churn (>= 3 owners or repeated renames), PE roll-up known for layoffs/roadmap freezes,
-     or acquired product hidden/unclear in parent navigation.
-   - Severe product naming/SKU/licensing/token confusion across a large portfolio.
-   - Recent supply-chain/customer-impacting security breach absent from main site (only on status page/press).
-   - Missing ISO 27001/SOC 2 on enterprise compliance pitch alongside unfinished site / dead '#' social links.
+   - Chronic serial M&A flipping (>= 4 distinct owners with repeated product renames), PE roll-up known for
+     post-deal layoffs & stalled roadmaps, or acquired product hidden/unlinked in parent navigation.
+   - Legacy/superseded product URL kept for SEO while vendor sells successor products under new names,
+     or severe multi-product naming/SKU/licensing/token confusion.
+   - Very recent (within ~60 days) supply-chain/customer breach absent from main site (only on status page/press).
+   - Tiny unestablished single-hobbyist tool (day-job developer, minimal traction) or enterprise-pitched
+     product missing ISO 27001/SOC 2 alongside unfinished site / dead '#' social links.
 3. RED (Disqualifying Trust, Legal, or Substance Risk):
-   - Regulator-confirmed violations/fines (FTC, GDPR DPA) or major ongoing biometric/deception enforcement.
-   - Undisclosed geopolitical/sanctions risk from credible research (e.g. Yale CELI Russia list) - ignore
-     random directory/paywall stubs like registercheck.de.
-   - Fake/contradictory user numbers, partner badges styled as customers, missing legal entity,
-     privacy policy downloading a .docx, or EOL product telling users to disable/bypass antivirus.
+   - Official regulator fines/orders (FTC, GDPR DPA, ICO) or active unlawful biometric/privacy enforcement
+     (do NOT put unverified old bugs without regulator fines or directory stubs like registercheck.de in red_signals).
+   - Undisclosed geopolitical/sanctions risk from credible research (e.g. Yale CELI Russia list).
+   - Missing identifiable legal entity/address/country anywhere on site/store, privacy policy downloading a .docx,
+     fake/contradictory user counters, partner/certification badges styled as customer logos ([IMG_ALTS]),
+     or explicit product EOL/discontinuation combined with antivirus-bypass instructions.
 
 Only put verified disqualifying facts in `red_signals` (leave `red_signals` empty for Green/Yellow).
 Return strict JSON:
