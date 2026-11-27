@@ -16,10 +16,14 @@ run_gates_in_dir() {
     )
 }
 
+staged_files=$(git diff --cached --name-only)
+
 for gate_script in */scripts/craftsmanship_gate.py; do
     if [ -f "$gate_script" ]; then
         subproject="${gate_script%/scripts/craftsmanship_gate.py}"
-        run_gates_in_dir "$subproject"
+        if echo "$staged_files" | grep -q "^${subproject}/"; then
+            run_gates_in_dir "$subproject"
+        fi
     fi
 done
 

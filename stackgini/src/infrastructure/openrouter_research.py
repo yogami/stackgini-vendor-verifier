@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import ipaddress
 import os
 import re
@@ -10,7 +11,13 @@ from pathlib import Path
 import httpx
 from pydantic import BaseModel, Field
 
-from src.domain.assessment import StackginiVerdict, VendorInput, WebCitation, WebIntelligence
+from src.domain.assessment import (
+    StackginiVerdict,
+    VendorInput,
+    WebCitation,
+    WebIntelligence,
+    extract_domain_from_url,
+)
 from src.domain.models import ProbeOutcome
 
 OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -18,46 +25,71 @@ DEFAULT_SEARCH_MODEL = "openai/gpt-4o-mini"
 DEFAULT_SYNTHESIS_MODEL = "anthropic/claude-sonnet-4.5"
 TIMEOUT_SECONDS = 45.0
 MAX_WEB_RESULTS = 5
-MAX_DOSSIER_TOKENS = 900
+MAX_DOSSIER_TOKENS = 950
 HTTP_OK = 200
 
-_SEARCH_PROMPT = """Gather a concise factual due-diligence dossier using web search for:
+_PRODUCT_SEARCH_PROMPT = """Research this software product and vendor using web search:
 - URL: {url}
 - Product: {product}
 - Vendor: {vendor}
 - Rendered DOM Excerpt: {dom_excerpt}
 
-Cover these 5 areas with dates, numbers, and exact URLs:
-1. Regulatory/legal actions: FTC orders, GDPR/DPA fines, lawsuits, sanctions/Russia trackers, or legal entity.
-2. Security incidents: Breaches/CVEs, and transparent main-site post-mortem vs silent status-page-only notice.
-3. Ownership & naming: M&A history, PE carve-outs, CEO changes, layoffs, or confusing renames/SKUs/tokens.
-4. Adoption & maintenance: Customer vs employee counts, release dates, forks/CRAN/GitHub, 3rd-party training.
-5. Obvious red flags: EOL/discontinuation, partner logos disguised as customers, or unverifiable claims."""
+Report factual evidence with dates, numbers, and exact URLs for:
+1. Ownership & M&A history: how many times sold/acquired, PE roll-ups, post-M&A layoffs or roadmap stalls,
+   or whether product is hidden/sunsetted in parent navigation.
+2. Product naming, SKU, or licensing confusion (e.g. overlapping names, frequent renames, token pricing).
+3. Real adoption & maintenance: customer count, employee count, latest release dates, GitHub/community ecosystem,
+   3rd-party workshops/training, and whether maintainer is a full-time hobbyist vs established creator/YC startup."""
+
+_OFFSITE_SEARCH_PROMPT = """Search strictly OFF-SITE third-party sources (exclude {domain}) for:
+- Product: {product}
+- Vendor: {vendor}
+Query guidance: check regulatory actions (FTC, GDPR DPA, ICO, noyb), lawsuits, sanctions/Russia trackers
+(e.g. Yale CELI), data breaches/CVEs (including status page incidents), and paid/fake review scandals.
+
+Provide exact dates, fine amounts, affected counts, and exact external URLs. Never cite unverified
+paywall directory stubs as sanctions matches unless confirmed by official EU/OFAC/UK/gov/reputable news."""
 
 _SYNTHESIS_PROMPT = """You are Stackgini's senior procurement verifier. Grade the vendor strictly on verified facts.
 
 Target: {product} by {vendor} ({url})
 Rendered DOM Excerpt: {dom_excerpt}
-Web Research Dossier:
-{dossier}
+Product & Ownership Dossier:
+{product_dossier}
 
-CALIBRATION RULES:
-- NEVER downgrade ugly, 1990s/2000s, or minimal sites if releases, foundation backing, or adoption are active (Green).
-- NEVER penalize a vendor if automated scraping/Playwright hit WAF Access Denied, 403, or robots.txt blocks.
-- Rate GREEN if solid and widely adopted, even with M&A/PE/CEO context or a transparently remediated past incident
-  with external forensics (list those caveats in yellow_signals).
-- Rate YELLOW for confusing naming/licensing traps, PE roadmap squeezes/layoffs, hobbyist bus factor,
-  or a recent customer-impacting security breach absent from the main site (only on status page or press).
-- Rate RED for FTC/DPA fines, undisclosed Russia/sanctions exposure, fake metrics/partner logos,
-  missing legal entity, or AV-bypass EOL.
+Off-Site Enforcement, Breach & Risk Dossier:
+{offsite_dossier}
 
+CALIBRATION RULES (FOLLOW CAREFULLY):
+1. LEGACY / SINGLE-DEV / STARTUP CALIBRATION -> GREEN (with caveats in yellow_signals):
+   - NEVER downgrade ugly, 1990s/2000s, or minimal websites if active releases, paid workshops, or adoption exist.
+   - Established single-developer tools with multi-year/decade adoption or current 2025-2026 releases are GREEN
+     (note bus-factor/commercial-license nuance in yellow_signals; ONLY Yellow if recent supply-chain hijack
+     or developer explicitly states day-job hobbyist with tiny traction).
+   - Valid YC-backed or early-stage startups with clear working self-serve pricing are GREEN.
+   - Solid enterprise leaders with ONE carve-out/acquisition or a transparently remediated past incident
+     with published external forensics (e.g. Mandiant) are GREEN (list M&A/CEO/incident notes in yellow_signals).
+2. YELLOW (Moderate / Portfolio / Governance Risk):
+   - Chronic M&A churn (>= 3 owners or repeated renames), PE roll-up known for layoffs/roadmap freezes,
+     or acquired product hidden/unclear in parent navigation.
+   - Severe product naming/SKU/licensing/token confusion across a large portfolio.
+   - Recent supply-chain/customer-impacting security breach absent from main site (only on status page/press).
+   - Missing ISO 27001/SOC 2 on enterprise compliance pitch alongside unfinished site / dead '#' social links.
+3. RED (Disqualifying Trust, Legal, or Substance Risk):
+   - Regulator-confirmed violations/fines (FTC, GDPR DPA) or major ongoing biometric/deception enforcement.
+   - Undisclosed geopolitical/sanctions risk from credible research (e.g. Yale CELI Russia list) - ignore
+     random directory/paywall stubs like registercheck.de.
+   - Fake/contradictory user numbers, partner badges styled as customers, missing legal entity,
+     privacy policy downloading a .docx, or EOL product telling users to disable/bypass antivirus.
+
+Only put verified disqualifying facts in `red_signals` (leave `red_signals` empty for Green/Yellow).
 Return strict JSON:
 {{
   "suggested_overall": "Green" | "Yellow" | "Red",
   "green_signals": [string],
   "yellow_signals": [string],
   "red_signals": [string],
-  "reasoning": "2-4 balanced sentences citing the key facts and sources.",
+  "reasoning": "2-4 balanced sentences citing the key verified facts and sources.",
   "citations": [{{"title": string, "url": "https://..."}}]
 }}"""
 
@@ -202,7 +234,7 @@ async def _close_if_owned(client: httpx.AsyncClient, external: httpx.AsyncClient
 
 
 class OpenRouterWebResearchAdapter:
-    """Two-stage OpenRouter WebResearchPort: cheap web search + frontier calibrated synthesis."""
+    """Two-stage OpenRouter WebResearchPort: dual web search + frontier calibrated synthesis."""
 
     def __init__(
         self,
@@ -217,7 +249,7 @@ class OpenRouterWebResearchAdapter:
         self._client = client
 
     async def research_vendor(self, item: VendorInput, dom_excerpt: str) -> ProbeOutcome[WebIntelligence]:
-        """Run Stage 1 web retrieval and Stage 2 calibrated verdict synthesis."""
+        """Run dual web retrieval and Stage 2 calibrated verdict synthesis."""
         if not self._api_key:
             return ProbeOutcome.unavailable(OPENROUTER_CHAT_URL, "missing_api_key")
         return await self._execute_with_client(item, dom_excerpt)
@@ -237,18 +269,20 @@ class OpenRouterWebResearchAdapter:
         item: VendorInput,
         dom_excerpt: str,
     ) -> ProbeOutcome[WebIntelligence]:
-        dossier, search_cites, err = await self._stage1_search(client, item, dom_excerpt)
-        if err:
-            return ProbeOutcome.unavailable(OPENROUTER_CHAT_URL, err)
-        return await self._stage2_synthesize(client, item, dom_excerpt, (dossier, search_cites))
+        domain = extract_domain_from_url(item.url)
+        p1 = _PRODUCT_SEARCH_PROMPT.format(
+            url=item.url, product=item.product, vendor=item.vendor, dom_excerpt=dom_excerpt
+        )
+        p2 = _OFFSITE_SEARCH_PROMPT.format(domain=domain, product=item.product, vendor=item.vendor)
+        (prod_txt, prod_cites, err1), (off_txt, off_cites, err2) = await asyncio.gather(
+            self._search_call(client, p1),
+            self._search_call(client, p2),
+        )
+        if err1 and err2:
+            return ProbeOutcome.unavailable(OPENROUTER_CHAT_URL, err1)
+        return await self._stage2_synthesize(client, item, dom_excerpt, (prod_txt, off_txt, [*prod_cites, *off_cites]))
 
-    async def _stage1_search(
-        self,
-        client: httpx.AsyncClient,
-        item: VendorInput,
-        dom_excerpt: str,
-    ) -> tuple[str, list[WebCitation], str]:
-        prompt = _SEARCH_PROMPT.format(url=item.url, product=item.product, vendor=item.vendor, dom_excerpt=dom_excerpt)
+    async def _search_call(self, client: httpx.AsyncClient, prompt: str) -> tuple[str, list[WebCitation], str]:
         body = {
             "model": self._search_model,
             "plugins": [{"id": "web", "max_results": MAX_WEB_RESULTS}],
@@ -266,14 +300,15 @@ class OpenRouterWebResearchAdapter:
         client: httpx.AsyncClient,
         item: VendorInput,
         dom_excerpt: str,
-        stage1: tuple[str, list[WebCitation]],
+        stage1: tuple[str, str, list[WebCitation]],
     ) -> ProbeOutcome[WebIntelligence]:
         prompt = _SYNTHESIS_PROMPT.format(
             url=item.url,
             product=item.product,
             vendor=item.vendor,
             dom_excerpt=dom_excerpt,
-            dossier=stage1[0],
+            product_dossier=stage1[0],
+            offsite_dossier=stage1[1],
         )
         body = {
             "model": self._synthesis_model,
@@ -284,7 +319,7 @@ class OpenRouterWebResearchAdapter:
         resp = await self._post_json(client, body)
         if resp.status_code != HTTP_OK:
             return ProbeOutcome.unavailable(OPENROUTER_CHAT_URL, f"http_{resp.status_code}")
-        intel = parse_openrouter_response(resp.json(), extra_citations=stage1[1])
+        intel = parse_openrouter_response(resp.json(), extra_citations=stage1[2])
         return ProbeOutcome.observed(OPENROUTER_CHAT_URL, intel)
 
     async def _post_json(self, client: httpx.AsyncClient, body: dict[str, object]) -> httpx.Response:
