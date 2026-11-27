@@ -1,0 +1,107 @@
+[project]
+name = "agentichackathon"
+version = "0.1.0"
+description = "Deterministic 5-signal SaaS vendor verifier under Hexagonal DDD and AST craftsmanship governance"
+authors = [
+    { name = "Yami Gopal", email = "yogami@berlinailabs.de" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "beautifulsoup4>=4.15.0",
+    "dnspython>=2.9.2",
+    "fastapi>=0.165.0",
+    "google-genai>=3.6.1",
+    "httpx>=0.29.0",
+    "lxml>=6.1.3",
+    "playwright>=1.65.2",
+    "pydantic>=2.14.4",
+    "python-whois>=0.9.6",
+    "tavily-python>=0.8.5",
+    "uvicorn>=0.54.0",
+]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "bandit>=1.9.4",
+    "import-linter>=2.17",
+    "mypy>=2.4.1",
+    "pip-audit>=2.10.1",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.5.0",
+    "pytest-cov>=7.1.0",
+    "pytest-playwright>=0.10.0",
+    "radon>=6.0.1",
+    "respx>=0.23.1",
+    "ruff>=0.17.6",
+    "xenon>=0.9.3",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "C90", "SIM", "RET", "ARG001", "PL", "RUF", "S"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["ARG001", "PLR2004"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 3
+
+[tool.ruff.lint.pylint]
+max-args = 4
+max-branches = 3
+max-returns = 2
+max-statements = 20
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+disallow_any_explicit = false
+warn_unreachable = true
+pretty = true
+mypy_path = "."
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+exclude_also = [
+    '\.\.\.',
+    'if __name__ == .__main__.:',
+]
+
+[tool.importlinter]
+root_packages = ["src"]
+
+[[tool.importlinter.contracts]]
+name = "Clean Architecture Concentric Dependency Rule"
+type = "layers"
+layers = [
+    "src.api",
+    "src.infrastructure",
+    "src.application",
+    "src.ports",
+    "src.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "Domain Zero Infrastructure Coupling"
+type = "forbidden"
+source_modules = ["src.domain", "src.ports", "src.application"]
+forbidden_modules = ["src.infrastructure", "src.api"]
