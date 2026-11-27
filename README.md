@@ -3,7 +3,7 @@
 Automated SaaS vendor verification engine built for the **Stackgini · Agents with Taste** challenge at AI Agents Berlin Hackathon (`Team: Berlin AI Labs` | `Yami Gopal <gopal.yami@gmail.com>`).
 
 ## Top-Level Deliverables
-- [stackgini-verdicts.csv](stackgini-verdicts.csv): Agent verdict file matching Stackgini's exact CSV schema (`id,url,product,vendor,overall,green_flags,yellow_flags,red_flags,reasoning`), including inline URLs behind reasons. (Pre-19:00 sample baseline currently committed; will be replaced with the official 10-product blind drop after `19:00 CET` and updated before `19:45 CET`.)
+- [stackgini-verdicts](stackgini-verdicts) and [stackgini-verdicts.csv](stackgini-verdicts.csv): Identical top-level verdict files for the official 10-product blind evaluation set (`id` `41` through `50`: `2 Green` / `7 Yellow` / `1 Red`), using Stackgini's exact CSV schema (`id,url,product,vendor,overall,green_flags,yellow_flags,red_flags,reasoning`) with inline `https://` evidence URLs behind every reason.
 - [stackgini-verdicts_sources.json](stackgini-verdicts_sources.json): Complete per-row audit trail with `source_urls[]` and `technical_probes` (`trust_score`, `verdict`, `abstained`, `findings`, `dom_summary`).
 - **Live Demo Web App:** https://stackgini-verifier-production.up.railway.app
 

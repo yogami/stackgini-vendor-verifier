@@ -1,216 +1,20 @@
 [
   {
-    "id": "u1",
-    "url": "https://linear.app",
-    "overall": "Green",
+    "id": "41",
+    "url": "https://product-experience-solutions.com/",
+    "overall": "Yellow",
     "source_urls": [
-      "https://dns.google/resolve?name=linear.app",
-      "https://api.github.com/search/repositories?q=%22linear.app%22%20subprocessors&per_page=3",
-      "https://linear.app/",
-      "https://linear.app/security",
-      "https://linear.app/legal",
-      "https://linear.app/privacy",
-      "https://linear.app/terms",
-      "https://linear.app/legal/aup",
-      "https://news.google.com/rss/articles/CBMiU0FVX3lxTFBmU3dTeUwwX1RNYUE3dUVnZ1lKM3JBbUpKOWdxdmpfTXF0N0RYaXhyTVFRTWV3ZnFoNDlGcDF0SFBnUkVNUENlZmZOTjRBaFlmOXBr?oc=5",
-      "https://github.com/kenjihiranabe/The-Art-of-Linear-Algebra"
-    ],
-    "technical_probes": {
-      "trust_score": 80,
-      "verdict": "verified",
-      "abstained": [
-        "certs",
-        "wayback"
-      ],
-      "findings": [
-        {
-          "rule_id": "dns_full_auth",
-          "claim": "Mail and sender authentication DNS records",
-          "observed_fact": "mx_count=4,dmarc=present",
-          "impact": 5,
-          "source_url": "https://dns.google/resolve?name=linear.app"
-        },
-        {
-          "rule_id": "dns_saas_stack",
-          "claim": "DNS third-party SaaS verification footprint",
-          "observed_fact": "saas_tokens=10 (anthropic,apple,docusign)",
-          "impact": 5,
-          "source_url": "https://dns.google/resolve?name=linear.app"
-        },
-        {
-          "rule_id": "subprocessor_unlisted",
-          "claim": "Enterprise GDPR subprocessor reverse lookup",
-          "observed_fact": "enterprise_refs=0",
-          "impact": 0,
-          "source_url": "https://api.github.com/search/repositories?q=%22linear.app%22%20subprocessors&per_page=3"
-        }
-      ],
-      "dom_summary": "final_url=https://linear.app/, claimed_year=None, dead_social=0, legal_docs=5, imprint_hits=0"
-    }
-  },
-  {
-    "id": "u2",
-    "url": "https://www.curl.se/",
-    "overall": "Green",
-    "source_urls": [
-      "https://api.github.com/search/repositories?q=%22curl.se%22%20subprocessors&per_page=3",
-      "https://curl.se/",
-      "https://curl.se/docs/security.html",
-      "https://news.google.com/rss/articles/CBMiswFBVV95cUxOeHFKX0RNZXVIU1lmM0hZOFBxX21ZZHJtajltMEc5bTRya0pKNURDdFgyMllfSkRYUUxZcTZEMXVIUjBnblhBMGRLZk1mYUdTdHVjU2dBN04zb0lwSzZ4WVpHSEdlZk02eVdEWDRkaE0xYjBROHJycXBEaG5qWEt3UEJNYTNBeTNOMmdudE42UVVFbjFPY1lsS3ZoblJmTmFTd3NVMDRtQ19FQlo1amV4NkFxaw?oc=5",
-      "https://en.wikipedia.org/wiki/CURL",
-      "https://github.com/curl/curl"
-    ],
-    "technical_probes": {
-      "trust_score": 70,
-      "verdict": "verified",
-      "abstained": [
-        "certs",
-        "wayback"
-      ],
-      "findings": [
-        {
-          "rule_id": "subprocessor_unlisted",
-          "claim": "Enterprise GDPR subprocessor reverse lookup",
-          "observed_fact": "enterprise_refs=0",
-          "impact": 0,
-          "source_url": "https://api.github.com/search/repositories?q=%22curl.se%22%20subprocessors&per_page=3"
-        }
-      ],
-      "dom_summary": "final_url=https://curl.se/, claimed_year=None, dead_social=0, legal_docs=1, imprint_hits=0"
-    }
-  },
-  {
-    "id": "u3",
-    "url": "https://www.personio.de/",
-    "overall": "Green",
-    "source_urls": [
-      "https://dns.google/resolve?name=personio.de",
-      "https://api.github.com/search/repositories?q=%22personio.de%22%20subprocessors&per_page=3",
-      "https://www.personio.de/",
-      "https://vercel.link/security-checkpoint"
-    ],
-    "technical_probes": {
-      "trust_score": 80,
-      "verdict": "verified",
-      "abstained": [
-        "rdap",
-        "certs",
-        "wayback"
-      ],
-      "findings": [
-        {
-          "rule_id": "dns_full_auth",
-          "claim": "Mail and sender authentication DNS records",
-          "observed_fact": "mx_count=5,dmarc=present",
-          "impact": 5,
-          "source_url": "https://dns.google/resolve?name=personio.de"
-        },
-        {
-          "rule_id": "dns_saas_stack",
-          "claim": "DNS third-party SaaS verification footprint",
-          "observed_fact": "saas_tokens=13 (1password,airtable,anthropic)",
-          "impact": 5,
-          "source_url": "https://dns.google/resolve?name=personio.de"
-        },
-        {
-          "rule_id": "subprocessor_unlisted",
-          "claim": "Enterprise GDPR subprocessor reverse lookup",
-          "observed_fact": "enterprise_refs=0",
-          "impact": 0,
-          "source_url": "https://api.github.com/search/repositories?q=%22personio.de%22%20subprocessors&per_page=3"
-        }
-      ],
-      "dom_summary": "final_url=https://www.personio.de/, claimed_year=None, dead_social=0, legal_docs=1, imprint_hits=0"
-    }
-  },
-  {
-    "id": "u4",
-    "url": "https://www.lastpass.com/",
-    "overall": "Green",
-    "source_urls": [
-      "https://dns.google/resolve?name=lastpass.com",
-      "https://www.lastpass.com/",
-      "https://www.lastpass.com/resources/best-practices/ai-saas-security-guides",
-      "https://www.lastpass.com/trust-center",
-      "https://www.lastpass.com/security",
-      "https://www.lastpass.com/features/security-dashboard",
-      "https://www.lastpass.com/roles/legal",
-      "https://www.lastpass.com/resources/reports/state-of-ai-and-saas-security-2026",
-      "https://www.lastpass.com/trial/msp",
-      "https://www.lastpass.com/partner/partner-locator",
-      "https://en.wikipedia.org/wiki/LastPass"
-    ],
-    "technical_probes": {
-      "trust_score": 80,
-      "verdict": "verified",
-      "abstained": [
-        "certs",
-        "subprocessor",
-        "wayback"
-      ],
-      "findings": [
-        {
-          "rule_id": "dns_full_auth",
-          "claim": "Mail and sender authentication DNS records",
-          "observed_fact": "mx_count=1,dmarc=present",
-          "impact": 5,
-          "source_url": "https://dns.google/resolve?name=lastpass.com"
-        },
-        {
-          "rule_id": "dns_saas_stack",
-          "claim": "DNS third-party SaaS verification footprint",
-          "observed_fact": "saas_tokens=8 (anthropic,apple,atlassian)",
-          "impact": 5,
-          "source_url": "https://dns.google/resolve?name=lastpass.com"
-        }
-      ],
-      "dom_summary": "final_url=https://www.lastpass.com/, claimed_year=None, dead_social=0, legal_docs=8, imprint_hits=0"
-    }
-  },
-  {
-    "id": "u5",
-    "url": "https://www.broadcom.com/products/software/automation/automic-automation",
-    "overall": "Green",
-    "source_urls": [
-      "https://dns.google/resolve?name=broadcom.com",
-      "https://www.broadcom.com/products/software/automation/automic-automation"
-    ],
-    "technical_probes": {
-      "trust_score": 80,
-      "verdict": "verified",
-      "abstained": [
-        "certs",
-        "subprocessor",
-        "wayback"
-      ],
-      "findings": [
-        {
-          "rule_id": "dns_full_auth",
-          "claim": "Mail and sender authentication DNS records",
-          "observed_fact": "mx_count=7,dmarc=present",
-          "impact": 5,
-          "source_url": "https://dns.google/resolve?name=broadcom.com"
-        },
-        {
-          "rule_id": "dns_saas_stack",
-          "claim": "DNS third-party SaaS verification footprint",
-          "observed_fact": "saas_tokens=8 (1password,airtable,apple)",
-          "impact": 5,
-          "source_url": "https://dns.google/resolve?name=broadcom.com"
-        }
-      ],
-      "dom_summary": "final_url=https://www.broadcom.com/products/software/automation/automic-automation, claimed_year=None, dead_social=0, legal_docs=0, imprint_hits=0"
-    }
-  },
-  {
-    "id": "u6",
-    "url": "https://www.blender.org/",
-    "overall": "Green",
-    "source_urls": [
-      "https://crt.sh/?q=blender.org&output=json",
-      "https://dns.google/resolve?name=blender.org",
-      "https://api.github.com/search/repositories?q=%22blender.org%22%20subprocessors&per_page=3",
-      "https://github.com/ahujasid/mcp-for-blender"
+      "https://crt.sh/?q=product-experience-solutions.com&output=json",
+      "https://dns.google/resolve?name=product-experience-solutions.com",
+      "https://api.github.com/search/repositories?q=%22product-experience-solutions.com%22%20subprocessors&per_page=3",
+      "https://product-experience-solutions.com/",
+      "https://product-experience-solutions.com/legal",
+      "https://linkedin.com/company/product-experience-solutions",
+      "https://linkedin.com/in/frank-ipfelkofer",
+      "https://www.cisonews.net/enforcement",
+      "https://worldyellowpages.com/s/product-experience-solutions-813327994b",
+      "https://www.linkedin.com/posts/frank-ipfelkofer_electrolux-group-case-study-activity-7154577167174021120-6IxH",
+      "https://apps.contentserv.com/"
     ],
     "technical_probes": {
       "trust_score": 85,
@@ -222,33 +26,537 @@
         {
           "rule_id": "cert_established",
           "claim": "Certificate Transparency footprint",
-          "observed_fact": "cert_count=4052",
+          "observed_fact": "cert_count=13",
           "impact": 5,
-          "source_url": "https://crt.sh/?q=blender.org&output=json"
+          "source_url": "https://crt.sh/?q=product-experience-solutions.com&output=json"
         },
         {
           "rule_id": "cert_subdomains",
           "claim": "Certificate Transparency operational infrastructure",
-          "observed_fact": "operational_subdomains=3,renewal_span_years=14",
+          "observed_fact": "operational_subdomains=0,renewal_span_years=4",
           "impact": 5,
-          "source_url": "https://crt.sh/?q=blender.org&output=json"
+          "source_url": "https://crt.sh/?q=product-experience-solutions.com&output=json"
         },
         {
           "rule_id": "dns_full_auth",
           "claim": "Mail and sender authentication DNS records",
-          "observed_fact": "mx_count=5,dmarc=present",
+          "observed_fact": "mx_count=1,dmarc=present",
           "impact": 5,
-          "source_url": "https://dns.google/resolve?name=blender.org"
+          "source_url": "https://dns.google/resolve?name=product-experience-solutions.com"
         },
         {
           "rule_id": "subprocessor_unlisted",
           "claim": "Enterprise GDPR subprocessor reverse lookup",
           "observed_fact": "enterprise_refs=0",
           "impact": 0,
-          "source_url": "https://api.github.com/search/repositories?q=%22blender.org%22%20subprocessors&per_page=3"
+          "source_url": "https://api.github.com/search/repositories?q=%22product-experience-solutions.com%22%20subprocessors&per_page=3"
+        }
+      ],
+      "dom_summary": "final_url=https://product-experience-solutions.com/, claimed_year=None, dead_social=0, legal_docs=1, imprint_hits=0"
+    }
+  },
+  {
+    "id": "42",
+    "url": "https://www.easyproject.co/en/",
+    "overall": "Yellow",
+    "source_urls": [
+      "https://crt.sh/?q=easyproject.co&output=json",
+      "https://api.github.com/search/repositories?q=%22easyproject.co%22%20subprocessors&per_page=3",
+      "https://www.easyproject.co/en/",
+      "https://www.easy8.com/rebranding",
+      "https://en.wikipedia.org/wiki/Easy8",
+      "https://www.easy8.com/EasyRedmine/media/doc/easy-software-certificate-iso-27001-2022-ltd-en-2.pdf",
+      "https://ico.org.uk/ESDWebPages/RegistrationCertificate/ZB023989",
+      "https://www.easy8.com/",
+      "https://www.easyproject.co/en/start.html",
+      "https://azuremarketplace.microsoft.com/en-us/marketplace/apps/easysoftwaresro1593005637384.easyproject_sas?tab=overview",
+      "https://easysoftware.com.pl/",
+      "https://monitorfirm.pb.pl/firma/easy-software-marek-roj/",
+      "https://www.easyproject.com/documentation/article/gdpr-features-0"
+    ],
+    "technical_probes": {
+      "trust_score": 80,
+      "verdict": "verified",
+      "abstained": [
+        "wayback"
+      ],
+      "findings": [
+        {
+          "rule_id": "cert_established",
+          "claim": "Certificate Transparency footprint",
+          "observed_fact": "cert_count=184",
+          "impact": 5,
+          "source_url": "https://crt.sh/?q=easyproject.co&output=json"
+        },
+        {
+          "rule_id": "cert_subdomains",
+          "claim": "Certificate Transparency operational infrastructure",
+          "observed_fact": "operational_subdomains=0,renewal_span_years=15",
+          "impact": 5,
+          "source_url": "https://crt.sh/?q=easyproject.co&output=json"
+        },
+        {
+          "rule_id": "subprocessor_unlisted",
+          "claim": "Enterprise GDPR subprocessor reverse lookup",
+          "observed_fact": "enterprise_refs=0",
+          "impact": 0,
+          "source_url": "https://api.github.com/search/repositories?q=%22easyproject.co%22%20subprocessors&per_page=3"
+        }
+      ],
+      "dom_summary": "final_url=https://www.easyproject.co/en/, claimed_year=None, dead_social=0, legal_docs=0, imprint_hits=0"
+    }
+  },
+  {
+    "id": "43",
+    "url": "https://it-demand-management.de/",
+    "overall": "Yellow",
+    "source_urls": [
+      "https://crt.sh/?q=it-demand-management.de&output=json",
+      "https://dns.google/resolve?name=it-demand-management.de",
+      "https://api.github.com/search/repositories?q=%22it-demand-management.de%22%20subprocessors&per_page=3",
+      "https://it-demand-management.de/",
+      "https://it-demand-management.de/impressum",
+      "https://it-demand-management.de/datenschutz",
+      "https://www.registercheck.de/companies/inserteffect-gmbh",
+      "https://www.ihk-nuernberg.de/wim-wirtschaft-in-mittelfranken/ihk-magazin-wim-10-112024/details/digitales-nutzbar-machen",
+      "https://cms.law/en/lux/publication/gdpr-enforcement-tracker-report/germany",
+      "https://inserteffect.com/",
+      "https://inserteffect.com/produkte",
+      "https://inserteffect.com/ueber-uns",
+      "https://stackgini.de/de",
+      "https://www.edpb.europa.eu/system/files/documents/2024-01/one_stop_shop_case_digest_security_data_breach_en.pdf",
+      "https://inserteffect.com/leistungen",
+      "https://www.bvdnet.de/en/issue-98-cw-43-45-2024/",
+      "https://www.cybersecuritydatabase.org/de/enforcement/"
+    ],
+    "technical_probes": {
+      "trust_score": 55,
+      "verdict": "suspicious",
+      "abstained": [
+        "rdap",
+        "wayback"
+      ],
+      "findings": [
+        {
+          "rule_id": "cert_established",
+          "claim": "Certificate Transparency footprint",
+          "observed_fact": "cert_count=11",
+          "impact": 5,
+          "source_url": "https://crt.sh/?q=it-demand-management.de&output=json"
+        },
+        {
+          "rule_id": "dns_missing_auth",
+          "claim": "Mail and sender authentication DNS records",
+          "observed_fact": "mx_count=0,spf=absent,dmarc=absent",
+          "impact": -20,
+          "source_url": "https://dns.google/resolve?name=it-demand-management.de"
+        },
+        {
+          "rule_id": "subprocessor_unlisted",
+          "claim": "Enterprise GDPR subprocessor reverse lookup",
+          "observed_fact": "enterprise_refs=0",
+          "impact": 0,
+          "source_url": "https://api.github.com/search/repositories?q=%22it-demand-management.de%22%20subprocessors&per_page=3"
+        }
+      ],
+      "dom_summary": "final_url=https://it-demand-management.de/, claimed_year=None, dead_social=0, legal_docs=2, imprint_hits=3"
+    }
+  },
+  {
+    "id": "44",
+    "url": "https://www.voidtools.com/",
+    "overall": "Yellow",
+    "source_urls": [
+      "https://dns.google/resolve?name=voidtools.com",
+      "https://api.github.com/search/repositories?q=%22voidtools.com%22%20subprocessors&per_page=3",
+      "https://www.voidtools.com/",
+      "https://www.voidtools.com/privacy/",
+      "https://www.voidtools.com/about/",
+      "https://www.cymaera.com/articles/everything.html",
+      "https://www.voidtools.com/en-us/faq/",
+      "https://www.voidtools.com/downloads/",
+      "https://www.voidtools.com/Changes.txt",
+      "https://www.voidtools.com/en-us/contact/",
+      "https://vulnerability.circl.lu/search?product=everything&vendor=voidtools",
+      "https://everycve.com/vendor/voidtools",
+      "https://nvd.nist.gov/products/cpe/search/results?keyword=cpe%3A2.3%3Aa%3Avoidtools&namingFormat=2.3&orderBy=2.3&status=FINAL%2CDEPRECATED",
+      "https://feedly.com/cve/vendors/voidtools",
+      "https://repology.org/project/everything/cves"
+    ],
+    "technical_probes": {
+      "trust_score": 75,
+      "verdict": "verified",
+      "abstained": [
+        "certs",
+        "wayback"
+      ],
+      "findings": [
+        {
+          "rule_id": "dns_full_auth",
+          "claim": "Mail and sender authentication DNS records",
+          "observed_fact": "mx_count=1,dmarc=present",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=voidtools.com"
+        },
+        {
+          "rule_id": "subprocessor_unlisted",
+          "claim": "Enterprise GDPR subprocessor reverse lookup",
+          "observed_fact": "enterprise_refs=0",
+          "impact": 0,
+          "source_url": "https://api.github.com/search/repositories?q=%22voidtools.com%22%20subprocessors&per_page=3"
+        }
+      ],
+      "dom_summary": "final_url=https://www.voidtools.com/, claimed_year=2026, dead_social=0, legal_docs=1, imprint_hits=0"
+    }
+  },
+  {
+    "id": "45",
+    "url": "https://www.sap.com/products/artificial-intelligence/joule-work.html",
+    "overall": "Yellow",
+    "source_urls": [
+      "https://dns.google/resolve?name=sap.com",
+      "https://api.github.com/search/repositories?q=%22sap.com%22%20subprocessors&per_page=3",
+      "https://www.sap.com/docs/download/investors/2026/sap-2026-q3-presentation.pdf",
+      "https://architecture.learning.sap.com/docs/ref-arch/bc7811",
+      "https://www.sap.com/docs/download/investors/2025/sap-2025-governance-articles-of-incorporation.pdf",
+      "https://help.sap.com/doc/joule-work-mobile-data-privacy-statement/260512/en-US/Data_Privacy_Statement.html",
+      "https://ec.europa.eu/commission/presscorner/api/files/document/print/en/ip_26_1554/IP_26_1554_EN.pdf",
+      "https://therecord.media/sap-germany-cyberattack-github",
+      "https://www.sap.com/products/artificial-intelligence/joule-work.html",
+      "https://news.sap.com/2026/10/joule-work-sap-business-ai-platform-power-next-generation-business-ai/",
+      "https://ibagroupit.com/insights/sap-news-october-2026/",
+      "https://actcomp.de/en/tools/sap-joule",
+      "https://www.theregister.com/tag/SAP",
+      "https://www.bleepingcomputer.com/news/security/sap-confirms-security-incident-after-suspicious-github-activity/"
+    ],
+    "technical_probes": {
+      "trust_score": 80,
+      "verdict": "verified",
+      "abstained": [
+        "certs",
+        "wayback"
+      ],
+      "findings": [
+        {
+          "rule_id": "dns_full_auth",
+          "claim": "Mail and sender authentication DNS records",
+          "observed_fact": "mx_count=1,dmarc=present",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=sap.com"
+        },
+        {
+          "rule_id": "dns_saas_stack",
+          "claim": "DNS third-party SaaS verification footprint",
+          "observed_fact": "saas_tokens=8 (anthropic,apple,atlassian)",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=sap.com"
+        },
+        {
+          "rule_id": "subprocessor_unlisted",
+          "claim": "Enterprise GDPR subprocessor reverse lookup",
+          "observed_fact": "enterprise_refs=0",
+          "impact": 0,
+          "source_url": "https://api.github.com/search/repositories?q=%22sap.com%22%20subprocessors&per_page=3"
         }
       ],
       "dom_summary": "DOM unavailable: waf_blocked"
+    }
+  },
+  {
+    "id": "46",
+    "url": "https://www.servicenow.com/products/it-asset-management.html",
+    "overall": "Yellow",
+    "source_urls": [
+      "https://dns.google/resolve?name=servicenow.com",
+      "https://api.github.com/search/repositories?q=%22servicenow.com%22%20subprocessors&per_page=3",
+      "https://www.sec.gov/Archives/edgar/data/1373715/000137371526000007/now-20251231.htm",
+      "https://www.sec.gov/Archives/edgar/data/1373715/000137371526000041/now2025ars.pdf",
+      "https://www.bleepingcomputer.com/news/security/servicenow-discloses-security-incident-exposing-customer-data/",
+      "https://oig.ftc.gov/sites/default/files/reports/2026-08/Management%20Advisory%20on%20the%20FTC%27s%20IT%20Asset%20Inventory%20Program%20final%208.19.26.pdf",
+      "https://eucoc.cloud/fileadmin/cloud-coc/files/reports/202507_ReportVerificationDoA_ServiceNow_2022LVL02SCOPE3113.pdf",
+      "https://intel.controlassurance.com/vendors/servicenow/index.html",
+      "https://servicenowerisa.com/wp-content/uploads/2025/12/117.pdf",
+      "https://www.servicenow.com/products/it-asset-management.html",
+      "https://www.sec.gov/Archives/edgar/data/1373715/000137371524000171/nowforms-3asr.htm",
+      "https://www.sec.gov/Archives/edgar/data/1373715/000137371524000030/now-20231231.htm",
+      "https://exa.ai/library/legal/entity/fx11q1j7vrk",
+      "https://www.cftc.gov/media/12551/piaservicenow042025/download"
+    ],
+    "technical_probes": {
+      "trust_score": 80,
+      "verdict": "verified",
+      "abstained": [
+        "certs",
+        "wayback"
+      ],
+      "findings": [
+        {
+          "rule_id": "dns_full_auth",
+          "claim": "Mail and sender authentication DNS records",
+          "observed_fact": "mx_count=2,dmarc=present",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=servicenow.com"
+        },
+        {
+          "rule_id": "dns_saas_stack",
+          "claim": "DNS third-party SaaS verification footprint",
+          "observed_fact": "saas_tokens=9 (airtable,anthropic,apple)",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=servicenow.com"
+        },
+        {
+          "rule_id": "subprocessor_unlisted",
+          "claim": "Enterprise GDPR subprocessor reverse lookup",
+          "observed_fact": "enterprise_refs=0",
+          "impact": 0,
+          "source_url": "https://api.github.com/search/repositories?q=%22servicenow.com%22%20subprocessors&per_page=3"
+        }
+      ],
+      "dom_summary": "DOM unavailable: waf_blocked"
+    }
+  },
+  {
+    "id": "47",
+    "url": "https://www.clearview.ai/",
+    "overall": "Red",
+    "source_urls": [
+      "https://dns.google/resolve?name=clearview.ai",
+      "https://api.github.com/search/repositories?q=%22clearview.ai%22%20subprocessors&per_page=3",
+      "https://www.clearview.ai/",
+      "https://www.clearview.ai/federal",
+      "https://www.clearview.ai/national-security-and-defense",
+      "https://www.clearview.ai/leadership",
+      "https://www.clearview.ai/legal",
+      "https://www.clearview.ai/security",
+      "https://www.clearview.ai/public-privacy-policy",
+      "https://www.clearview.ai/privacy-and-requests",
+      "https://ico.org.uk/media2/migrated/4020436/clearview-ai-inc-mpn-20220518.pdf",
+      "https://www.edpb.europa.eu/news/dutch-supervisory-authority-imposes-a-fine-on-clearview-because-of-illegal-data-collection-for_en",
+      "https://www.oaic.gov.au/news/media-centre/statement-on-clearview-ai",
+      "https://ago.vermont.gov/sites/ago/files/2025-04/Clearview%20Complaint%20-%204.25.2025%20Stamped%20Copy.pdf",
+      "https://www.reuters.com/sustainability/society-equity/clearview-ai-faces-criminal-complaint-austria-suspected-privacy-violations-2025-10-28/",
+      "https://www.clearview.ai/principles",
+      "https://www.clearview.ai/gov",
+      "https://go.clearview.ai/demo",
+      "https://www.clearview.ai/faq",
+      "https://en.wikipedia.org/wiki/Clearview_AI",
+      "https://www.gov.uk/administrative-appeals-tribunal-decisions/the-information-commissioners-office-v-clearview-ai-inc-privacy-international-intervening-2025-ukut-319-aac"
+    ],
+    "technical_probes": {
+      "trust_score": 80,
+      "verdict": "verified",
+      "abstained": [
+        "certs",
+        "wayback"
+      ],
+      "findings": [
+        {
+          "rule_id": "dns_full_auth",
+          "claim": "Mail and sender authentication DNS records",
+          "observed_fact": "mx_count=3,dmarc=present",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=clearview.ai"
+        },
+        {
+          "rule_id": "dns_saas_stack",
+          "claim": "DNS third-party SaaS verification footprint",
+          "observed_fact": "saas_tokens=5 (apple,docusign,google)",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=clearview.ai"
+        },
+        {
+          "rule_id": "subprocessor_unlisted",
+          "claim": "Enterprise GDPR subprocessor reverse lookup",
+          "observed_fact": "enterprise_refs=0",
+          "impact": 0,
+          "source_url": "https://api.github.com/search/repositories?q=%22clearview.ai%22%20subprocessors&per_page=3"
+        }
+      ],
+      "dom_summary": "final_url=https://www.clearview.ai/, claimed_year=2026, dead_social=0, legal_docs=7, imprint_hits=2"
+    }
+  },
+  {
+    "id": "48",
+    "url": "https://www.mendix.com/platform/",
+    "overall": "Yellow",
+    "source_urls": [
+      "https://crt.sh/?q=mendix.com&output=json",
+      "https://dns.google/resolve?name=mendix.com",
+      "https://api.github.com/search/repositories?q=%22mendix.com%22%20subprocessors&per_page=3",
+      "https://www.mendix.com/platform/",
+      "https://www.mendix.com/trust/",
+      "https://www.mendix.com/resources/ai-in-action/",
+      "https://www.mendix.com/legal/",
+      "https://www.mendix.com/legal/accessibility/",
+      "https://www.mendix.com/legal/miscellaneous/corporate-information/",
+      "https://www.mendix.com/legal/privacy/privacy-notice/",
+      "https://www.mendix.com/legal/terms-of-use/",
+      "https://www.cisa.gov/news-events/ics-advisories/icsa-26-321-05",
+      "https://cert-portal.siemens.com/productcert/html/ssb-751527.html",
+      "https://www.cisa.gov/news-events/ics-advisories/icsa-24-165-01",
+      "https://docs.mendix.com/releasenotes/security-advisories/",
+      "https://www.mendix.com/company/",
+      "https://www.mendix.com/evaluation-guide/what-is-mendix/",
+      "https://www.mendix.com/",
+      "https://www.gartner.com/reviews/product/mendix-platfor",
+      "https://www.mendix.com/platform/ai/",
+      "https://www.cisa.gov/news-events/ics-advisories/icsa-25-168-01",
+      "https://www.mendix.com/trust/mendix-and-data-privacy/"
+    ],
+    "technical_probes": {
+      "trust_score": 90,
+      "verdict": "verified",
+      "abstained": [
+        "wayback"
+      ],
+      "findings": [
+        {
+          "rule_id": "cert_established",
+          "claim": "Certificate Transparency footprint",
+          "observed_fact": "cert_count=5052",
+          "impact": 5,
+          "source_url": "https://crt.sh/?q=mendix.com&output=json"
+        },
+        {
+          "rule_id": "cert_subdomains",
+          "claim": "Certificate Transparency operational infrastructure",
+          "observed_fact": "operational_subdomains=8,renewal_span_years=13",
+          "impact": 5,
+          "source_url": "https://crt.sh/?q=mendix.com&output=json"
+        },
+        {
+          "rule_id": "dns_full_auth",
+          "claim": "Mail and sender authentication DNS records",
+          "observed_fact": "mx_count=1,dmarc=present",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=mendix.com"
+        },
+        {
+          "rule_id": "dns_saas_stack",
+          "claim": "DNS third-party SaaS verification footprint",
+          "observed_fact": "saas_tokens=5 (apple,atlassian,docusign)",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=mendix.com"
+        },
+        {
+          "rule_id": "subprocessor_unlisted",
+          "claim": "Enterprise GDPR subprocessor reverse lookup",
+          "observed_fact": "enterprise_refs=0",
+          "impact": 0,
+          "source_url": "https://api.github.com/search/repositories?q=%22mendix.com%22%20subprocessors&per_page=3"
+        }
+      ],
+      "dom_summary": "final_url=https://www.mendix.com/platform/, claimed_year=None, dead_social=0, legal_docs=7, imprint_hits=0"
+    }
+  },
+  {
+    "id": "49",
+    "url": "https://www.videolan.org/",
+    "overall": "Green",
+    "source_urls": [
+      "https://crt.sh/?q=videolan.org&output=json",
+      "https://dns.google/resolve?name=videolan.org",
+      "https://api.github.com/search/repositories?q=%22videolan.org%22%20subprocessors&per_page=3",
+      "https://www.videolan.org/",
+      "https://www.videolan.org/legal.html",
+      "https://www.videolan.org/security/",
+      "https://www.videolan.org/vlc/releases/3.0.24.html",
+      "https://www.journaldugeek.com/2017/01/30/bercy-videolan-lien-vlc-erreur/",
+      "https://ostif.org/wp-content/uploads/2026/04/OSTIF-libVLC-Report-2-1.pdf",
+      "https://intel.controlassurance.com/products/vlc-media-player/index.html",
+      "https://www.videolan.org/projects/",
+      "https://www.videolan.org/index.en-US.html",
+      "https://www.videolan.org/support/faq.html",
+      "https://www.videolan.org/videolan/",
+      "https://wiki.videolan.org/VideoLAN/",
+      "https://notcve.org/vendors/videolan/products/vlc/",
+      "https://cvepremium.circl.lu/search?vendor=VideoLAN",
+      "https://www.arcom.fr/en/find-out-more/legal-area/legal-resources/videolan-reviews"
+    ],
+    "technical_probes": {
+      "trust_score": 85,
+      "verdict": "verified",
+      "abstained": [
+        "wayback"
+      ],
+      "findings": [
+        {
+          "rule_id": "cert_established",
+          "claim": "Certificate Transparency footprint",
+          "observed_fact": "cert_count=2706",
+          "impact": 5,
+          "source_url": "https://crt.sh/?q=videolan.org&output=json"
+        },
+        {
+          "rule_id": "cert_subdomains",
+          "claim": "Certificate Transparency operational infrastructure",
+          "observed_fact": "operational_subdomains=1,renewal_span_years=13",
+          "impact": 5,
+          "source_url": "https://crt.sh/?q=videolan.org&output=json"
+        },
+        {
+          "rule_id": "dns_full_auth",
+          "claim": "Mail and sender authentication DNS records",
+          "observed_fact": "mx_count=1,dmarc=present",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=videolan.org"
+        },
+        {
+          "rule_id": "subprocessor_unlisted",
+          "claim": "Enterprise GDPR subprocessor reverse lookup",
+          "observed_fact": "enterprise_refs=0",
+          "impact": 0,
+          "source_url": "https://api.github.com/search/repositories?q=%22videolan.org%22%20subprocessors&per_page=3"
+        }
+      ],
+      "dom_summary": "final_url=https://www.videolan.org/, claimed_year=None, dead_social=0, legal_docs=2, imprint_hits=0"
+    }
+  },
+  {
+    "id": "50",
+    "url": "https://www.tldraw.com/",
+    "overall": "Green",
+    "source_urls": [
+      "https://dns.google/resolve?name=tldraw.com",
+      "https://api.github.com/search/repositories?q=%22tldraw.com%22%20subprocessors&per_page=3",
+      "https://www.tldraw.com/",
+      "https://find-and-update.company-information.service.gov.uk/company/14068968",
+      "https://tldraw.dev/blog/announcing-tldraw-series-a",
+      "https://tldraw.dev/releases",
+      "https://www.sec.gov/cgi-bin/browse-edgar?CIK=1919672&action=getcompany&type=D",
+      "https://security.snyk.io/package/npm/tldraw",
+      "https://privacyratings.com/diagrams/tldraw/",
+      "https://tldraw.dev/company",
+      "https://github.com/tldraw/tldraw/",
+      "https://github.com/tldraw/tldraw/blob/main/COMPANY.md",
+      "https://www.sec.gov/Archives/edgar/data/1919672/000191967224000001/0001919672-24-000001.txt",
+      "https://github.com/tldraw/tldraw/blob/b554d8650ef24cd8be84678dceffffbfd013df56/SECURITY.md",
+      "https://raw.githubusercontent.com/atterpac/tldraw/refs/heads/main/apps/dotcom/client/public/tos.html"
+    ],
+    "technical_probes": {
+      "trust_score": 75,
+      "verdict": "verified",
+      "abstained": [
+        "certs",
+        "wayback"
+      ],
+      "findings": [
+        {
+          "rule_id": "dns_full_auth",
+          "claim": "Mail and sender authentication DNS records",
+          "observed_fact": "mx_count=5,dmarc=present",
+          "impact": 5,
+          "source_url": "https://dns.google/resolve?name=tldraw.com"
+        },
+        {
+          "rule_id": "subprocessor_unlisted",
+          "claim": "Enterprise GDPR subprocessor reverse lookup",
+          "observed_fact": "enterprise_refs=0",
+          "impact": 0,
+          "source_url": "https://api.github.com/search/repositories?q=%22tldraw.com%22%20subprocessors&per_page=3"
+        }
+      ],
+      "dom_summary": "final_url=https://www.tldraw.com/, claimed_year=None, dead_social=0, legal_docs=0, imprint_hits=0"
     }
   }
 ]
